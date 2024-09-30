@@ -1,0 +1,23 @@
+[package]
+name = "rippy"
+version = "0.1.0"
+authors = ["Ante Tonkovic-Capin <antetc@icloud.com>"]
+description = "Rippy is an OS independent bastard love child of tree and grep with subdirectory pruning and multithreaded file pattern search."
+edition = "2021"
+
+[dependencies]
+rayon = "1.10.0"
+regex = "1.10.5"
+clap = "4.0"
+chrono = "0.4.38"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+jwalk = "0.8.1"
+indexmap = {version = "2.0", features = ["serde"]}
+ahash = "0.8"
+is_executable = "1.0"
+
+[profile.release]
+panic = 'abort'
+codegen-units = 1
+strip = 'debuginfo'
