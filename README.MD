@@ -15,21 +15,21 @@
 To install `rippy`, clone the repository and build it with `Cargo`:
 
 ```sh
-git clone https://github.com/AnteT/rippy.git
-cd rippy && cargo build --release
+$ git clone https://github.com/AnteT/rippy.git
+$ cd rippy && cargo build --release
 ```
 
 ### Linux and macOS
 1. After building `rippy`, the executable will be located in `./target/release/rippy`, to save it to your path to make it globally accessible run:
 
     ```sh
-    sudo cp target/release/rippy /usr/local/bin
+    $ cp target/release/rippy /usr/local/bin
     ```
 
 2. Confirm the installation process was succesful by running:
 
     ```sh
-    rippy --version
+    $ rippy --version
     ```
 
 ### Windows
@@ -38,13 +38,13 @@ After building `rippy`, the executable will be located in `.\target\release\ripp
 1.  Navigate to the location containing `rippy` using the same PowerShell or Command Prompt session that was used to build it:
 
     ```cmd
-    cd .\target\release\
+    > cd .\target\release\
     ```
 
 2. Copy the full path of the installation by grabbing it with:
 
     ```cmd
-    echo %cd%
+    > echo %cd%
     ```
 
 3. Add the directory containing `rippy.exe` to your system `PATH`:
@@ -56,15 +56,15 @@ After building `rippy`, the executable will be located in `.\target\release\ripp
 
 4. To verify that `rippy` is accessible globally, open a new PowerShell or Command Prompt and run:
 
-   ```sh
-   rippy --version
+   ```cmd
+   > rippy --version
    ```
 
 ## Usage
 To use `rippy`, simply run it from the command line:
 
 ```sh
-rippy <DIRECTORY> [PATTERN] [OPTIONS]
+$ rippy <DIRECTORY> [PATTERN] [OPTIONS]
 ```
 
 ### Arguments
@@ -105,23 +105,23 @@ Some example use-cases for `rippy` are provided below:
 
 1. **Display a tree of the current directory**:
    ```sh
-   rippy .
+   $ rippy .
    ```
 2. **Search for a pattern in files and display as relative paths**:
    ```sh
-   rippy . "TODO" -p 
+   $ rippy . "TODO" -p 
    ```
 3. **Search for a regex pattern in only `.txt` files and sort results by size**:
    ```sh
-   rippy /path/to/docs "\b[A-z]{3}\b" -X "*.txt" -s --sort size
+   $ rippy /path/to/docs "\b[A-z]{3}\b" -X "*.txt" -s --sort size
    ```   
 5. **Limit search depth and sort by last modified date**:
    ```sh
-   rippy /home/user -d -L 3 --sort date
+   $ rippy /home/user -d -L 3 --sort date
    ```
 5. **Include hidden files but ignore `.git` directory and export results to JSON**:
    ```sh
-   rippy ./ --all -I ".git" -o "results.json"
+   $ rippy ./ --all -I ".git" -o "results.json"
    ```
 
 ### Detailed Overview
@@ -147,7 +147,7 @@ $ rippy "../rippy"
 Leveraging rayon to execute fast multi-threaded file operations, `rippy` offers extensive functionality, including the ability to open and search the contents of files, traverse directories, and apply parameters to ignore or target specific patterns or extensions. Combining the beauty of the Unix `tree` command with the usefulness of `grep`, `rippy` can search file contents and display the context around matched snippets. For example, you can search only the `*.rs` files in the project source directory for mentions of the substring `'JSON'` and export the results:
 
 ```shell
-> rippy ../rippy -sd "JSON" -X "*.rs" -o "json-mentioned.json"
+$ rippy ../rippy -sd "JSON" -X "*.rs" -o "json-mentioned.json"
 
  ../rippy
   ╰── src 
