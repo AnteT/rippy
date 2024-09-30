@@ -23,7 +23,7 @@ $ cd rippy && cargo build --release
 1. After building `rippy`, the executable will be located in `./target/release/rippy`, to save it to your path to make it globally accessible run:
 
     ```sh
-    $ cp target/release/rippy /usr/local/bin
+    $ sudo cp target/release/rippy /usr/local/bin
     ```
 
 2. Confirm the installation process was succesful by running:
