@@ -4,8 +4,9 @@
 ## Features
 - **Directory Tree Display**: Visualizes directory contents in a hierarchical tree format.
 - **Multithreaded Search**: Perform fast searches for patterns within files using `rayon` to parallelize and leverage multiple threads when possible.
-- **Filtering and Sorting**: Customize the output with options to filter files by patterns, sort by name, date, size, or type, and include hidden files.
-- **Search Results**: Optionally shows snippets of file content around matching patterns.
+- **Advanced Filtering**: Filter entries with options to use any `.gitignore` files found for matching, or provide your own ignore or include patterns to use.
+- **Sorting Results**: Sort the tree output by name, date, size or type including in reverse order.
+- **Search Windowing**: Optionally shows snippets of file content around matching patterns.
 - **Customizable Output**: Display results as flat lists, include file size, dates, and more.
 - **Output to JSON**: Export the tree and search results to a file.
 
@@ -89,6 +90,7 @@ $ rippy <DIRECTORY> [PATTERN] [OPTIONS]
 - `-Y, --short-date`: Display a shortened date in `YYYY-MM-DD` format.
 - `-E, --enumerate`: Number results within their parent directory.
 - `-T, --time`: Show search duration.
+- `-g, --no-gitignore`: Do not use `.gitignore` files when found for filtering.
 - `-G, --gray`: Display results in grayscale without styling.
 - `-V, --verbose`: Show all optional details.
 - `-Q, --quote`: Wrap paths in double quotes.
