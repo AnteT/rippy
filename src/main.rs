@@ -4,11 +4,11 @@ mod args;
 mod tcolor;
 mod tree;
 mod dir;
+mod ignorer;
 
 use std::sync::LazyLock;
 
 fn main() -> std::io::Result<()> {
-
     // Initialize global args
     static args: LazyLock<crate::args::RippyArgs> = LazyLock::new(|| crate::args::parse_args());
 

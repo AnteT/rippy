@@ -2,6 +2,7 @@ use is_executable::IsExecutable;
 use jwalk::WalkDirGeneric;
 use crate::args::RippyArgs;
 use crate::{ansi_color, concat_str};
+use crate::ignorer::Ignorer;
 
 // const DEFAULT_IGNORE: [&str;3] = ["venv", "node_modules", "__pycache__"];
 
@@ -39,43 +40,49 @@ pub struct CrawlResults {
 
 /// Primary directory crawl, returns `CrawlResults` struct containing Vec<TreeLeaf>.
 pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults> {
-    let walk_dir = WalkDirGeneric::<(usize, TreeLeaf)>::new(&args.directory)
-    .skip_hidden(!args.include_all)
-    .max_depth(args.max_depth)
-    .follow_links(args.is_follow_links)
-    .process_read_dir(|_depth, _path, _dir_state, children| {
+    let walk_dir = WalkDirGeneric::<(Ignorer, TreeLeaf)>::new(&args.directory)
+        .skip_hidden(false) // Modified from `skip_hidden(!args.include_all)` after new ignorer.rs module and process added.
+        .max_depth(args.max_depth)
+        .follow_links(args.is_follow_links)
+        .process_read_dir(|_depth, _path, ignorer, children| {
             
             // 2. Custom filter
             children.retain(|dir_entry_result| {
-                dir_entry_result.as_ref().map(|dir_entry| {
+                dir_entry_result.as_ref().map_or(false, |dir_entry| {
                     // Convert the file name to a string slice
-                    dir_entry.file_name()
-                        .to_str()
-                        .map(|fname| {
-                            // if is directory:
-                            if dir_entry.file_type().is_dir() || ( dir_entry.file_type().is_symlink() && dir_entry.path().is_dir() ) {
-                                if args.ignore_patterns.as_ref().map_or(false, |patterns| patterns.is_match(fname)) {
-                                    // If include_all is false and the directory name starts with '.' or is in DEFAULT_IGNORE, do not retain
-                                    return false
-                                } else {
-                                    if args.ignore_patterns.as_ref().map_or(true, |patterns| !patterns.is_match(fname)) {
-                                        return true
-                                    }
-                                    return false
-                                }
-                            // if is file:
-                            } else if dir_entry.file_type().is_file() || ( dir_entry.file_type().is_symlink() && dir_entry.path().is_file() ) {
-                                // Result of boolean checks for passing include and passing exclude returns correct keep or discard bool
-                                args.include_patterns.as_ref().map_or(true, |patterns| patterns.is_match(fname)) 
-                                    && args.ignore_patterns.as_ref().map_or(true, |patterns| !patterns.is_match(fname))
-                            } else {
-                                false
+                    dir_entry.file_name().to_str()
+                        .map_or(false, |fname| {
+                            let dir_entry_path = dir_entry.path();
+                            let dir_entry_ftype = dir_entry.file_type;
+                            let is_ftype_dir = dir_entry_ftype.is_dir() || ( dir_entry_ftype.is_symlink() && dir_entry_path.is_dir() );
+                            let is_ftype_file = dir_entry_ftype.is_file() || ( dir_entry_ftype.is_symlink() && dir_entry_path.is_dir() );
+                            let is_hidden_file = _depth.is_some() && fname.starts_with(".");
+
+                            if is_hidden_file && args.is_gitignore && fname == ".gitignore" {
+                                // Grab the .gitignore file now unless user wants to include all
+                                *ignorer = Ignorer::new(&dir_entry_path);
                             }
-                        })
-                        .unwrap_or(false) // Default to false if file_name is None or to_str fails
-                })
-                .unwrap_or(false) // Default to false if dir_entry_result is Err
+                            // Separated checks for hidden file and gitignored file
+                            if !args.include_all && is_hidden_file {
+                                return false
+                            }
+                            // Needs to be ignored irrespective of file or directory type
+                            if ignorer.is_ignore(&dir_entry_path, is_ftype_dir) 
+                                || args.ignore_patterns.as_ref().map_or(false, |patterns| patterns.is_match(fname)) {
+                                // println!("Skipped due to mathcing ignore glob: {:?}", dir_entry_path);
+                                return false
+                            }
+                            // Return true for dirs that have already passed ignore check
+                            if is_ftype_dir {
+                                return true
+                            } else {
+                                // Result of boolean checks for passing include if is file or return false by boolean fail if filetype is not resolved
+                                return is_ftype_file && args.include_patterns.as_ref().map_or(true, |patterns| patterns.is_match(fname)) 
+                            }
+                        }) // Defaults to false if file_name is None or to_str fails
+                }) // Defaults to false if dir_entry_result is Err
             });
+
 
             children.iter_mut().for_each(|dir_entry_result| {
                 if let Ok(dir_entry) = dir_entry_result {

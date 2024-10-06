@@ -63,6 +63,7 @@ pub struct RippyArgs {
     pub is_just_counts: bool,
     pub is_enumerate: bool,
     pub is_follow_links: bool,
+    pub is_gitignore: bool,
     pub radius: usize,
     pub colors: RippySchema,
 }
@@ -233,11 +234,17 @@ pub fn parse_args() -> RippyArgs {
              .short_alias('t')
              .long("time")
              .action(ArgAction::SetTrue)
-             .help("Display the search duration time with results"))              
+             .help("Display the search duration time with results"))     
+        .arg(Arg::new("no-gitignore")
+             .short('g')
+             .long("no-gitignore")
+             .aliases(["gitignore","no-ignore"])
+             .action(ArgAction::SetTrue)
+             .help("Do not use .gitignore files when found for filtering"))         
         .arg(Arg::new("gray")
              .short('G')
-             .short_alias('g')
              .long("gray")
+             .alias("grayscale")
              .action(ArgAction::SetTrue)
              .help("Display the results in grayscale without styling")) 
         .arg(Arg::new("verbose")
@@ -384,6 +391,9 @@ pub fn parse_args() -> RippyArgs {
     // Display enumerated position of entry within parent directory
     let is_enumerate = matches.get_flag("enumerate");
 
+    // Whether or not gitignore files should be used to filter results using specified globs and patterns
+    let is_gitignore = !matches.get_flag("no-gitignore"); // More like asking "is no gitignore flag present? If not, then yes is gitignore, false otherwise"
+
     // Display context window with search results and character radius window if present, assuming a window was requested if radius is specified without explicit window flag
     let is_window = !matches.get_flag("windowless");
     let radius = *matches.get_one::<usize>("window-radius").unwrap_or(&20_usize);
@@ -414,6 +424,7 @@ pub fn parse_args() -> RippyArgs {
         is_just_counts,
         is_enumerate,
         is_follow_links,
+        is_gitignore,
         radius,
         colors
     }
