@@ -33,7 +33,7 @@ fn main() -> std::io::Result<()> {
 
             // Output tree as JSON to file provided
             if !args.output.is_empty() {
-                match tree.write_to_json_file(&args.output, &args) {
+                match tree.write_to_json_file(&args) {
                     Ok(_) => {},
                     Err(e) => eprintln!("{} writing output to file: {}", ansi_color!(crate::tcolor::ERROR_COLOR, bold=true, "Error"), e),
                 }

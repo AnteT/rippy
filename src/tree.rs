@@ -209,9 +209,9 @@ impl Tree {
     }
 
     /// Converts the Tree structure to JSON and writes it to a file
-    pub fn write_to_json_file<P: AsRef<str>>(&self, file_path: P, settings: &RippyArgs) -> std::io::Result<()> {
+    pub fn write_to_json_file(&self, settings: &RippyArgs) -> std::io::Result<()> {
         // Harmonize into expected generic type
-        let file_path = file_path.as_ref();
+        let file_path = &settings.output;
 
         // Use a closure to capture `settings`
         let convert_children = |children: &TreeMap<String, Tree>| {
