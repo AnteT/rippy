@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::tcolor::{RippySchema, enable_ansi_support, ERROR_COLOR, WARN_COLOR};
 use crate::{ansi_color, concat_str};
-use crate::tree::Tree;
+use crate::tree::{Tree, TreeCounts};
 
 use clap::{value_parser, Arg, ArgAction, Command};
 use regex::{Regex, RegexSet};
@@ -446,4 +446,40 @@ fn parse_and_convert_patterns(patterns: Vec<&String>, case_insensitive: bool) ->
      }).collect();
      let re_set = RegexSet::new(converted_patterns).expect("Invalid regex patterns");
      re_set
- }
+}
+
+/// Summarizes and formats result returned by args after `tree` has been constructed and rendered
+pub fn format_result_summary(args: &'static RippyArgs, num_matched: usize, num_searched: usize, counts: &TreeCounts) -> String {
+     let fmt_result = if num_matched > 0 {
+          if args.is_search {
+              let match_suffix = if num_matched != 1 {"matches"} else {"match"};
+              let match_text = concat_str!(num_matched.to_string(), " ", match_suffix);
+              let match_fmt = ansi_color!(&args.colors.window, bold=!args.is_grayscale, &match_text);
+              let search_text = concat_str!(num_searched.to_string(), " searched");
+              let search_fmt = ansi_color!(&args.colors.search, bold=false, &search_text);
+              concat_str!(match_fmt, ", ", search_fmt)
+          } else {
+              let dirs_suffix = if counts.dir_count != 1 {"directories"} else {"directory"};
+              let dirs_text = concat_str!(counts.dir_count.to_string(), " ", dirs_suffix);
+              let dirs_fmt = ansi_color!(&args.colors.dir, bold=!args.is_grayscale, &dirs_text);
+              let files_suffix = if counts.file_count != 1 {"files"} else {"file"};
+              let files_text = concat_str!(counts.file_count.to_string(), " ", files_suffix);
+              let files_fmt = ansi_color!(&args.colors.file, bold=!args.is_grayscale, &files_text);
+              concat_str!(dirs_fmt, ", ", files_fmt)
+          }
+      } else {
+          if args.is_search {
+              let matches_fmt = ansi_color!(&args.colors.zero, bold=!args.is_grayscale, "0 matches");
+              let searched_fmt = ansi_color!(&args.colors.search, bold=false, concat_str!(num_searched.to_string(), " searched"));
+              concat_str!({if args.is_just_counts {""} else {"\n"}}, matches_fmt, ", ", searched_fmt)
+          } else {
+              let dirs_text = concat_str!(counts.dir_count.to_string(), " directories");
+              let dirs_fmt = ansi_color!(&args.colors.dir, bold=!args.is_grayscale, &dirs_text);
+              let files_text = concat_str!(counts.file_count.to_string(), " files");
+              let files_fmt = ansi_color!(&args.colors.file, bold=!args.is_grayscale, &files_text);
+              concat_str!({if args.is_just_counts {""} else {"\n"}}, &dirs_fmt, ", ", &files_fmt)
+          }
+      };
+      // Return result after summary counts formatted
+      fmt_result
+}

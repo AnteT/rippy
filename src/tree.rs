@@ -158,9 +158,7 @@ impl Tree {
     /// LEGACY: Recursively prints the tree structure tied to the `Tree` instance directly as an uncolored legacy version compatible with `tree` output.
     /// For example, using a valid object of type `Tree`, call with:
     /// 
-    /// ```rust
-    /// tree.print_legacy("", 0, true);
-    /// ```
+    ///     tree.print_legacy("", 0, true);
     /// 
     /// Which will render output that can be diff'd against the unix tree command:
     /// 
@@ -228,9 +226,11 @@ impl Tree {
             "children": convert_children(&self.children),
         });
 
-        let file_path = path::Path::new(file_path);
-        let file = fs::File::create(file_path)?;
-        serde_json::to_writer_pretty(file, &json_value)?;
+        // Open the file and wrap it in BufWriter for efficient writing
+        let file = std::fs::File::create(file_path)?;
+        let buf_wrtier = io::BufWriter::new(file);
+
+        serde_json::to_writer_pretty(buf_wrtier, &json_value)?;
 
         Ok(())
     }
