@@ -46,7 +46,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
         .follow_links(args.is_follow_links)
         .process_read_dir(|_depth, _path, ignorer, children| {
             
-            // 2. Custom filter
+            // 1. Custom filter first pass
             children.retain(|dir_entry_result| {
                 dir_entry_result.as_ref().map_or(false, |dir_entry| {
                     // Convert the file name to a string slice
@@ -83,7 +83,19 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
                 }) // Defaults to false if dir_entry_result is Err
             });
 
+            // 2. Custom filter second pass if needed due to gitignore initialization point
+            if args.is_gitignore {
+                children.retain(|dir_entry_result| {
+                    dir_entry_result.as_ref().map_or(false, |dir_entry| {
+                        let dir_entry_ftype = dir_entry.file_type;
+                        let is_ftype_dir = dir_entry_ftype.is_dir() || ( dir_entry_ftype.is_symlink() && dir_entry.path().is_dir() );
+                        // Results in skipping those entries that may have been missed in first retention check due to timing of gitignore instantiation
+                        !ignorer.is_ignore(&dir_entry.path(), is_ftype_dir)
+                    })
+                });
+            }
 
+            // 3. Create the client state for entries we intend to keep and build the tree from
             children.iter_mut().for_each(|dir_entry_result| {
                 if let Ok(dir_entry) = dir_entry_result {
                     // Let symlinks fall through since its cheaper to let the File::open fail than to check through a syscall and traverse to find out if its a file or not
