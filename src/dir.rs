@@ -84,7 +84,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
             });
 
             // 2. Custom filter second pass if needed due to gitignore initialization point
-            if args.is_gitignore {
+            if args.is_gitignore && ignorer.has_matcher() {
                 children.retain(|dir_entry_result| {
                     dir_entry_result.as_ref().map_or(false, |dir_entry| {
                         let dir_entry_ftype = dir_entry.file_type;

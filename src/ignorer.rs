@@ -15,7 +15,6 @@ impl Ignorer {
     pub fn is_ignore<P: AsRef<Path>>(&self, path: P, is_dir: bool) -> bool {
         self.matcher.as_ref().map_or_else(|| false, |m| m.matched(path, is_dir).is_ignore())
     }
-    #[allow(unused)]
     /// Check if `matcher` has been initialized with a `Gitignore`.
     pub fn has_matcher(&self) -> bool {
         self.matcher.as_ref().is_some()
