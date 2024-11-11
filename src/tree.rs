@@ -421,7 +421,7 @@ pub fn build_tree_from_paths(paths: Vec<TreeLeaf>, args: &'static RippyArgs) -> 
         let traversal_path = if leaf.relative_path.starts_with(&root_path) { &leaf.relative_path[root_path_length..] } else { &leaf.relative_path };
         let leaf_components: Vec<&str> = traversal_path.split('/').filter(|s| !s.is_empty()).collect();
         let leaf_components = if let Some((_, c)) = leaf_components.split_last() { c } else { &leaf_components };
-        let current_parent = if let Some(&p) = leaf_components.last() { p.to_string() } else { "".to_string() };
+        let current_parent = leaf_components.join("/");
 
         // Quick insertion of node in scenario where parent is the same as last iteration to avoid wasting time iterating to required depth
         if last_parent == current_parent {
