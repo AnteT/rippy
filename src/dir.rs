@@ -186,7 +186,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
                                 };
                                 let sym_display = if args.show_relative_path || args.show_full_path { p.to_string_lossy().replace("\\", "/") } else {p.file_name().map_or_else(|| p.to_string_lossy().replace("\\", "/"), |p| p.to_string_lossy().replace("\\", "/"))};
                                 let sym_display = if args.is_quote {concat_str!("\"", sym_display, "\"")} else {sym_display};
-                                // now we have it as a string with the right color scheme and display style
+                                // Now we have it as a string with the right color scheme and display style
                                 let sym_display = ansi_color!(color, bold=is_bold, sym_display);
                                 sym_display
                                 }
@@ -210,13 +210,13 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
             paths_searched += 1;
         }
         // Skip entry if its the root dir or if we're searching for matching patterns and none was found or if we're targeting specific file patterns and the empty dir has no matches and itself doesnt match the pattern
-        if entry.depth() == 0 || (args.is_search && entry.client_state.window.is_none()) || (entry.file_type().is_dir() && args.include_patterns.as_ref().map_or(false, |patterns| !patterns.is_match(&entry.file_name().to_string_lossy().to_string()))) {
+        if entry.depth() == 0 || (args.is_search && entry.client_state.window.is_none()) || (entry.client_state.is_dir && args.include_patterns.as_ref().map_or(false, |patterns| !patterns.is_match(&entry.file_name().to_string_lossy().to_string()))) {
+            // DEBUG only:
             // println!("Entry skipped at depth [{}]: {:?} with client state: {:?}", entry.depth, entry.file_name(), entry.client_state);
             continue;
         } else {          
             paths.push(entry.client_state);
         }
     }
-
     Ok( CrawlResults { paths, paths_searched } )
 }
