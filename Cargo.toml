@@ -1,9 +1,12 @@
 [package]
 name = "rippy"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Ante Tonkovic-Capin <antetc@icloud.com>"]
 description = "Rippy is an OS independent bastard love child of tree and grep with subdirectory pruning and multithreaded file pattern search."
 edition = "2021"
+
+[build-dependencies]
+chrono = "0.4.38"
 
 [dependencies]
 rayon = "1.10.0"

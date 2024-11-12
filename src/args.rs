@@ -8,7 +8,15 @@ use crate::tree::{Tree, TreeCounts};
 use clap::{value_parser, Arg, ArgAction, Command};
 use regex::{Regex, RegexSet};
 
-const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+/// Returns the full version and build info for rippy in the format of:
+/// 
+/// ```text
+/// v<VERSION> (<BUILD_DATE>)
+/// ```
+/// 
+/// To be used after help menu to display equivalent of program about or program version.
+const RELEASE_INFO: Option<&str> = option_env!("RELEASE_INFO");
+
 
 /// Sorting keys and whether or not they're in ascending (true) or descending (false) order.
 #[derive(Debug, PartialEq, Eq)]
@@ -67,13 +75,12 @@ pub struct RippyArgs {
     pub radius: usize,
     pub colors: RippySchema,
 }
-
 /// Parses command line arguments and returns as struct to use as config container throughout rippy.
 pub fn parse_args() -> RippyArgs {
-    let matches = Command::new("Rippy Multithreaded Tree Search")
-        .version(VERSION.unwrap_or("Unknown"))
+    let matches = Command::new("rippy")
+        .version(RELEASE_INFO.unwrap_or("Unknown"))
         .author("Ante Tonkovic-Capin")
-        .about("Crawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree.")
+        .about(concat_str!(env!("CARGO_PKG_NAME"), " ", option_env!("RELEASE_INFO").unwrap_or("No release information available."), "\nCrawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree."))
         .disable_version_flag(true)
         .disable_help_flag(true)
         .after_help("For example, run `rippy \"./\"` to display a tree of the current directory's contents.")
