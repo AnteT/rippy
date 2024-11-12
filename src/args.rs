@@ -80,7 +80,7 @@ pub fn parse_args() -> RippyArgs {
     let matches = Command::new("rippy")
         .version(RELEASE_INFO.unwrap_or("Unknown"))
         .author("Ante Tonkovic-Capin")
-        .about(concat_str!(env!("CARGO_PKG_NAME"), " ", option_env!("RELEASE_INFO").unwrap_or("No release information available."), "\nCrawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree."))
+        .about(concat_str!(env!("CARGO_PKG_NAME"), " ", option_env!("RELEASE_INFO").unwrap_or("[unknown version]"), "\nCrawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree."))
         .disable_version_flag(true)
         .disable_help_flag(true)
         .after_help("For example, run `rippy \"./\"` to display a tree of the current directory's contents.")
