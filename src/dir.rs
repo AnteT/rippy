@@ -55,7 +55,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
                             let dir_entry_path = dir_entry.path();
                             let dir_entry_ftype = dir_entry.file_type;
                             let is_ftype_dir = dir_entry_ftype.is_dir() || ( dir_entry_ftype.is_symlink() && dir_entry_path.is_dir() );
-                            let is_ftype_file = dir_entry_ftype.is_file() || ( dir_entry_ftype.is_symlink() && dir_entry_path.is_dir() );
+                            let is_ftype_file = dir_entry_ftype.is_file() || ( dir_entry_ftype.is_symlink() && dir_entry_path.is_file() );
                             let is_hidden_file = _depth.is_some() && fname.starts_with(".");
 
                             if is_hidden_file && args.is_gitignore && fname == ".gitignore" {
