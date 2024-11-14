@@ -92,7 +92,6 @@ $ rippy <DIRECTORY> [PATTERN] [OPTIONS]
 - `-T, --time`: Show search duration.
 - `-g, --no-gitignore`: Do not use `.gitignore` files when found for filtering.
 - `-G, --gray`: Display results in grayscale without styling.
-- `-V, --verbose`: Show all optional details.
 - `-Q, --quote`: Wrap paths in double quotes.
 - `-F, --flat`: Display results as a flat list without indentation.
 - `-U, --dir-detail`: Show size and date details for directories.
