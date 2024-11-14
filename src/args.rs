@@ -313,7 +313,7 @@ pub fn parse_args() -> RippyArgs {
         eprintln!("{} The directory provided, '{}', does not exist or is not a valid directory.", error_fmt, directory_fmt);
         std::process::exit(1);
     }
-     // Show full path, not used with verbose by default
+     // Show full path
      let show_full_path = matches.get_flag("full-path");
      // Show full relative paths
      let show_relative_path = matches.get_flag("relative-path");
@@ -362,18 +362,15 @@ pub fn parse_args() -> RippyArgs {
     // Display dir-detail details for both file and directory types
     let is_dir_detail = matches.get_flag("dir-detail");
 
-    // Override defaults and use all available details
-    let is_verbose = matches.get_flag("verbose");
-
     // Determine if size should be displayed
-    let show_size = matches.get_flag("size") || is_verbose;
+    let show_size = matches.get_flag("size");
 
     // Show last modified date only in short format
     let is_short_date = matches.get_flag("short-date");
-    let show_date = matches.get_flag("date") || is_short_date || is_verbose;
+    let show_date = matches.get_flag("date") || is_short_date;
 
     // Elapsed search time
-    let show_elapsed = matches.get_flag("time") || is_verbose;
+    let show_elapsed = matches.get_flag("time");
 
     // Select color schema based on arguments and ansi support and if search pattern is present
     let is_grayscale = matches.get_flag("gray") || !std::io::stdout().is_terminal() || !enable_ansi_support();
