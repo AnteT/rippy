@@ -17,7 +17,6 @@ use regex::{Regex, RegexSet};
 /// To be used after help menu to display equivalent of program about or program version.
 const RELEASE_INFO: Option<&str> = option_env!("RELEASE_INFO");
 
-
 /// Sorting keys and whether or not they're in ascending (true) or descending (false) order.
 #[derive(Debug, PartialEq, Eq)]
 pub enum SortKey {
@@ -289,7 +288,6 @@ pub fn parse_args() -> RippyArgs {
             .short('v')
             .short_alias('V')
             .long("version")
-            .action(ArgAction::SetTrue)
             .help("Display the version of rippy")
             .display_order(1000)
             .action(clap::ArgAction::Version))
