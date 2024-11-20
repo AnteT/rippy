@@ -73,32 +73,34 @@ $ rippy <DIRECTORY> [PATTERN] [OPTIONS]
 - `[PATTERN]`: Optional pattern to search file contents for (supports regular expressions).
 
 ### Optional Flags
-- `-A, --all`: Include hidden files and directories.
-- `-B, --sort-by <KEY>`: Sort by date, name, size, or type (default: name).
-- `-L, --max-depth <DEPTH>`: Set maximum directory depth to search.
-- `-I, --ignore <PAT1, ..., PATN>`: Ignore files matching specified patterns.
-- `-X, --include <PAT1, ..., PATN>`: Only include files matching specified patterns.
-- `-M, --max-files <FILES>`: Set maximum number of files to display per directory.
-- `-O, --output <FILENAME>`: Export results to a JSON file.
-- `-N, --indent <WIDTH>`: Set the character width for tree indentation (default: 2).
-- `-C, --case-insensitive`: Make pattern matching case-insensitive.
-- `-l, --follow-links`: Follow symbolic links.
-- `-P, --relative-path`: Display results as relative paths.
-- `-K, --full-path`: Display full canonical paths.
-- `-S, --size`: Display file and directory sizes.
-- `-D, --date`: Show the last modified date.
-- `-Y, --short-date`: Display a shortened date in `YYYY-MM-DD` format.
-- `-E, --enumerate`: Number results within their parent directory.
-- `-T, --time`: Show search duration.
-- `-g, --no-gitignore`: Do not use `.gitignore` files when found for filtering.
-- `-G, --gray`: Display results in grayscale without styling.
-- `-Q, --quote`: Wrap paths in double quotes.
-- `-F, --flat`: Display results as a flat list without indentation.
-- `-U, --dir-detail`: Show size and date details for directories.
-- `-W, --windowless`: Display search results without content snippets.
-- `-J, --just-counts`: Show only the entry counts.
-- `-v, --version`: Show the current version of Rippy.
-- `-h, --help`: Display help and usage information.
+- `-A, --all`: Include hidden files and directories
+- `-B, --sort-by <KEY>`: Sorting options: 'date', 'name' [d], 'size' or 'type'
+- `-L, --max-depth <DEPTH>`: Maximum directory depth to search
+- `-Y, --date-format <FORMAT>`: Display date using the specified format (e.g., '%Y-%m-%d'), see [chrono docs](https://docs.rs/chrono/latest/chrono/format/strftime/index.html) for more details
+- `-I, --ignore <PAT1, ..., PATN>`: Ignore specific file extensions or directories
+- `-X, --include <PAT1, ..., PATN>`: Restrict search to specific filename patterns
+- `-R, --window-radius <RADIUS>`: Maximum character radius for result snippet window
+- `-M, --max-files <FILES>`: Maximum number of files to display for each directory
+- `-O, --output <FILENAME>`: Export the results as JSON to specified file
+- `-N, --indent <WIDTH>`: Character width to use for tree depth indentation
+- `-C, --case-insensitive`: Make pattern matching case insensitive
+- `-l, --follow-links`: Follow targets of symbolic links when found
+- `-P, --relative-path`: Display the relative paths from root with results
+- `-Z, --reverse`: Reverses sort order from ascending to descending
+- `-K, --full-path`: Display the full canonical paths with results
+- `-S, --size`: Display the size of files and directories with results
+- `-D, --date`: Display the system last modified datetime with results
+- `-E, --enumerate`: Display results enumerated by index within parent
+- `-T, --time`: Display the search duration time with results
+- `-g, --no-gitignore`: Do not use .gitignore files when found for filtering
+- `-G, --gray`: Display the results in grayscale without styling
+- `-Q, --quote`: Display the path results wrapped in double-quotes
+- `-F, --flat`: Display the results as flat list without indentation
+- `-U, --dir-detail`: Display size and date time details for directories
+- `-W, --windowless`: Display search results without context snippet window
+- `-J, --just-counts`: Display just entry counts without rendering a tree
+- `-h, --help`: Display help and usage information for rippy
+- `-v, --version`: Display the version of rippy
 
 ## Examples
 ### Quick Overview

@@ -6,20 +6,6 @@ const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
 #[cfg(windows)]
 const STD_OUTPUT_HANDLE: u32 = -11i32 as u32;
 
-/* ========================= 24 bit ANSI color scheme ========================= */
-// pub const ERROR_COLOR: Option<&'static str> = Some("\x1b[38;2;241;76;76m");
-// pub const WARN_COLOR: Option<&'static str> = Some("\x1b[38;2;229;229;16m");
-// const ROOT_COLOR: Option<&'static str> = Some("\x1b[38;2;245;204;14m");
-// const DIR_COLOR: Option<&'static str> = Some("\x1b[38;2;102;218;226m");
-// const DIR_TIME_COLOR: Option<&'static str> = Some("\x1b[38;2;69;172;180m");
-// const FILE_COLOR: Option<&'static str> = Some("\x1b[38;2;199;209;220m");
-// const DETAILS_COLOR: Option<&'static str> = Some("\x1b[38;2;157;171;185m");
-// const MATCHES_COLOR: Option<&'static str> = Some("\x1b[38;2;26;227;137m");
-// const SEARCH_COLOR: Option<&'static str> = Some("\x1b[38;2;245;204;14m");
-// const ZERO_COLOR: Option<&'static str> = Some("\x1b[38;2;245;204;14m");
-// const NONE_COLOR: Option<&'static str> = None;
-
-
 /* ========================= 8 bit ANSI color scheme ========================= */
 pub const ERROR_COLOR: Option<&'static str> = Some("\x1b[38;5;203m");
 pub const WARN_COLOR: Option<&'static str> = Some("\x1b[38;5;184m");

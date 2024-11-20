@@ -326,7 +326,8 @@ fn format_display_datetime(last_modified: Option<f64>, settings: &RippyArgs, ent
         if !settings.is_dir_detail && entry_type == EntryType::Directory {
             return "".to_string();
         }
-        let dt_format = if settings.is_short_date {"%Y-%m-%d"} else {"%Y-%m-%d %H:%M:%S"}; // "%Y-%m-%d %H:%M:%S" for [2024-07-24 15:09:57] or "%d-%b-%y" for [12-Jul-24]
+        // let dt_format = if settings.is_short_date {"%Y-%m-%d"} else {"%Y-%m-%d %H:%M:%S"}; // "%Y-%m-%d %H:%M:%S" for [2024-07-24 15:09:57] or "%d-%b-%y" for [12-Jul-24]
+        let dt_format = &settings.date_format;
         last_modified.map(|timestamp| {
             // Convert f64 to Duration
             let duration_since_epoch = Duration::from_secs_f64(timestamp);

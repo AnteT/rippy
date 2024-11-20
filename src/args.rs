@@ -5,6 +5,7 @@ use crate::tcolor::{RippySchema, enable_ansi_support, ERROR_COLOR, WARN_COLOR};
 use crate::{ansi_color, concat_str};
 use crate::tree::{Tree, TreeCounts};
 
+use clap::parser::ValueSource;
 use clap::{value_parser, Arg, ArgAction, Command};
 use regex::{Regex, RegexSet};
 
@@ -61,7 +62,7 @@ pub struct RippyArgs {
     pub show_relative_path: bool,
     pub show_size: bool,
     pub show_date: bool,
-    pub is_short_date: bool,
+    pub date_format: String,
     pub show_elapsed: bool,
     pub is_grayscale: bool,
     pub is_quote: bool,
@@ -114,7 +115,7 @@ pub fn parse_args() -> RippyArgs {
              .ignore_case(true)
              .display_order(1)
              .action(ArgAction::Set)
-             .help("Sorting options: \"date\", \"name\" [d], \"size\" or \"type\""))
+             .help("Sorting options: 'date', 'name' [d], 'size' or 'type'"))
         .arg(Arg::new("max-depth")
              .short('L')
              .long("max-depth")
@@ -122,14 +123,25 @@ pub fn parse_args() -> RippyArgs {
              .action(ArgAction::Set)
              .display_order(2)
              .value_parser(value_parser!(usize))
-             .help("Maximum directory depth to search"))    
+             .help("Maximum directory depth to search"))  
+        .arg(Arg::new("date-format")
+             .short('Y')
+             .short_alias('y')
+             .long("date-format")
+             .aliases(["date-formatting","dt-format","strftime","format","last-modified-format"])
+             .value_name("FORMAT")
+             .default_value("%Y-%m-%d %H:%M:%S")
+             .hide_default_value(true)
+             .action(ArgAction::Set)
+             .display_order(3)
+             .help("Display date using the specified format (e.g., '%Y-%m-%d')"))                  
         .arg(Arg::new("ignore")
              .short('I')
              .short_alias('i')
              .long("ignore")
              .value_name("PAT1, ..., PATN")
              .value_delimiter(',')
-             .display_order(3)
+             .display_order(4)
              .action(ArgAction::Append)
              .help("Ignore specific file extensions or directories"))         
         .arg(Arg::new("include")
@@ -138,7 +150,7 @@ pub fn parse_args() -> RippyArgs {
              .long("include")
              .value_name("PAT1, ..., PATN")
              .value_delimiter(',')
-             .display_order(4)
+             .display_order(5)
              .action(ArgAction::Append)
              .help("Restrict search to specific filename patterns"))                  
         .arg(Arg::new("window-radius")
@@ -150,7 +162,7 @@ pub fn parse_args() -> RippyArgs {
              .default_value("20")
              .value_parser(value_parser!(usize))
              .hide_default_value(true)
-             .display_order(5)
+             .display_order(6)
              .action(ArgAction::Set)
              .help("Maximum character radius for result snippet window"))                        
         .arg(Arg::new("max-files")
@@ -160,7 +172,7 @@ pub fn parse_args() -> RippyArgs {
              .value_name("FILES")
              .aliases(["max","max-file"])
              .action(ArgAction::Set)
-             .display_order(6)
+             .display_order(7)
              .value_parser(value_parser!(usize))
              .help("Maximum number of files to display for each directory"))          
         .arg(Arg::new("output")
@@ -169,7 +181,7 @@ pub fn parse_args() -> RippyArgs {
              .long("output")
              .value_name("FILENAME")
              .action(ArgAction::Set)
-             .display_order(7)
+             .display_order(8)
              .help("Export the results as JSON to specified file"))       
         .arg(Arg::new("indent")
              .short('N')
@@ -180,7 +192,7 @@ pub fn parse_args() -> RippyArgs {
              .value_parser(value_parser!(usize))
              .default_value("2")
              .hide_default_value(true)
-             .display_order(8)
+             .display_order(9)
              .help("Character width to use for tree depth indentation"))         
         .arg(Arg::new("case-insensitive")
              .short('C')
@@ -188,14 +200,14 @@ pub fn parse_args() -> RippyArgs {
              .long("case-insensitive")
              .aliases(["uncase","uncased","ignore-case"])
              .action(ArgAction::SetTrue)
-             .display_order(9)
+             .display_order(10)
              .help("Make pattern matching case insensitive"))     
         .arg(Arg::new("follow-links")
              .short('l')
              .long("follow-links")
              .aliases(["follow-symbolic-links","follow"])
              .action(ArgAction::SetTrue)
-             .display_order(10)
+             .display_order(11)
              .help("Follow targets of symbolic links when found"))                                           
         .arg(Arg::new("relative-path")
              .short('P')
@@ -231,13 +243,7 @@ pub fn parse_args() -> RippyArgs {
              .long("date")
              .aliases(["last-modified","datetime","show-date","display-date"])
              .action(ArgAction::SetTrue)
-             .help("Display the system last modified datetime with results"))      
-         .arg(Arg::new("short-date")
-             .short('Y')
-             .short_alias('y')
-             .long("short-date")
-             .action(ArgAction::SetTrue)
-             .help("Display a shortened last modified date as YYYY-MM-DD"))                         
+             .help("Display the system last modified datetime with results"))                            
         .arg(Arg::new("enumerate")
              .short('E')
              .short_alias('e')
@@ -378,8 +384,8 @@ pub fn parse_args() -> RippyArgs {
     let show_size = matches.get_flag("size");
 
     // Show last modified date only in short format
-    let is_short_date = matches.get_flag("short-date");
-    let show_date = matches.get_flag("date") || is_short_date;
+    let date_format = matches.get_one::<String>("date-format").map_or_else(|| "%Y-%m-%d %H:%M:%S".to_string(), |fmt| fmt.to_string());
+    let show_date = matches.get_flag("date") || matches!(matches.value_source("date-format"), Some(ValueSource::CommandLine));
 
     // Elapsed search time
     let show_elapsed = matches.get_flag("time");
@@ -427,7 +433,7 @@ pub fn parse_args() -> RippyArgs {
         show_relative_path,
         show_size,
         show_date,
-        is_short_date,
+        date_format,
         show_elapsed,
         is_grayscale,
         is_quote,
