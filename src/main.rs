@@ -4,7 +4,6 @@ mod args;
 mod tcolor;
 mod tree;
 mod crawl;
-mod ignorer;
 
 use std::sync::LazyLock;
 
