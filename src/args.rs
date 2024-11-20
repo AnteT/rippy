@@ -77,7 +77,7 @@ pub struct RippyArgs {
 }
 /// Parses command line arguments and returns as struct to use as config container throughout rippy.
 pub fn parse_args() -> RippyArgs {
-    let matches = Command::new("rippy")
+    let matches = Command::new(env!("CARGO_PKG_NAME"))
         .version(RELEASE_INFO.unwrap_or("Unknown"))
         .author("Ante Tonkovic-Capin")
         .about(concat_str!(env!("CARGO_PKG_NAME"), " ", option_env!("RELEASE_INFO").unwrap_or("[unknown version]"), "\nCrawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree."))
