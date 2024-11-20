@@ -3,7 +3,7 @@
 mod args;
 mod tcolor;
 mod tree;
-mod dir;
+mod crawl;
 mod ignorer;
 
 use std::sync::LazyLock;
@@ -15,7 +15,7 @@ fn main() -> std::io::Result<()> {
     // Starts timer if show elapsed present
     let start = if args.show_elapsed { Some(std::time::Instant::now()) } else { None };
 
-    match crate::dir::crawl_directory(&args) {
+    match crate::crawl::crawl_directory(&args) {
         Ok(result) => {
             let num_matched = result.paths.len();
             let num_searched = result.paths_searched;

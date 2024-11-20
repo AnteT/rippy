@@ -10,7 +10,7 @@ use std::time::{UNIX_EPOCH, Duration};
 
 use crate::args::RippyArgs;
 use crate::{ansi_color, concat_str};
-use crate::dir::TreeLeaf;
+use crate::crawl::TreeLeaf;
 
 use chrono;
 use is_executable::is_executable;
@@ -140,14 +140,11 @@ impl Tree {
                 }
             }
 
-            self.fmt_width = Some(max_length as usize);
-
             // Set fmt_width for all children in the current directory
             for child in self.children.values_mut() {
                 if child.entry_type == EntryType::File {
                     child.fmt_width = Some(max_length as usize);
                 } else if child.entry_type == EntryType::Directory {
-                    child.fmt_width = Some(max_length as usize);
                     // Recursively calculate and set fmt_width for the child directory
                     child.calculate_fmt_width();
                 }

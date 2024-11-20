@@ -1,6 +1,6 @@
 [package]
 name = "rippy"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Ante Tonkovic-Capin <antetc@icloud.com>"]
 description = "Rippy is an OS independent bastard love child of tree and grep with subdirectory pruning and multithreaded file pattern search."
 edition = "2021"
