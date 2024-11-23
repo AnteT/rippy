@@ -76,8 +76,8 @@ pub struct RippyArgs {
     pub colors: RippySchema,
 }
 /// Parses command line arguments and returns as struct to use as config container throughout rippy.
-pub fn parse_args() -> RippyArgs {
-    let matches = Command::new(env!("CARGO_PKG_NAME"))
+pub fn parse_args(args: Option<Vec<String>>) -> RippyArgs {
+    let rippy_cmd = Command::new(env!("CARGO_PKG_NAME"))
         .version(RELEASE_INFO.unwrap_or("Unknown"))
         .author("Ante Tonkovic-Capin")
         .about(concat_str!(env!("CARGO_PKG_NAME"), " ", option_env!("RELEASE_INFO").unwrap_or("[unknown version]"), "\nCrawls directory specified according to arguments, optionally executing multithreaded searches for pattern provided, returning results in a pruned and pretty printed terminal tree."))
@@ -317,8 +317,9 @@ pub fn parse_args() -> RippyArgs {
             .action(ArgAction::SetTrue)
             .help("Display help and usage information for rippy")
             .display_order(1000)
-            .action(clap::ArgAction::Help))        
-        .get_matches();
+            .action(clap::ArgAction::Help));
+     
+    let matches = if args.is_none() { rippy_cmd.get_matches() } else { rippy_cmd.get_matches_from(args.unwrap()) };
 
     // Initial start directory to crawl
     let directory_arg = matches.get_one::<String>("directory").map_or_else(|| ".".to_string(), |p| p.replace("\\", "/"));

@@ -28,7 +28,7 @@ impl<P: AsRef<std::path::Path>> From<P> for Ignorer {
     }
 }
 
-#[derive(Debug, Clone, Default)] // Derive Serialize and Deserialize
+#[derive(Debug, Clone, Default, PartialEq)] // Derive Serialize and Deserialize
 pub struct TreeLeaf {
     pub name: String,
     pub relative_path: String,
@@ -53,7 +53,7 @@ impl std::fmt::Display for TreeLeaf {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 /// Primary container for directory crawl results.
 pub struct CrawlResults {
     pub paths: Vec<TreeLeaf>,

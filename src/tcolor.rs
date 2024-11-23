@@ -12,10 +12,7 @@ pub const WARN_COLOR: Option<&'static str> = Some("\x1b[38;5;184m");
 const ROOT_COLOR: Option<&'static str> = Some("\x1b[38;5;220m");
 const DIR_COLOR: Option<&'static str> = Some("\x1b[38;5;80m");
 const EXEC_COLOR: Option<&'static str> = Some("\x1b[38;5;211m"); 
-
-// const FILE_COLOR: Option<&'static str> = Some("\x1b[38;5;252m"); // Originally
 const FILE_COLOR: Option<&'static str> = None; // Revised 2024-09-19
-
 const SYM_COLOR: Option<&'static str> = Some("\x1b[38;5;147m");
 const DETAILS_COLOR: Option<&'static str> = Some("\x1b[38;5;248m");
 const MATCHES_COLOR: Option<&'static str> = Some("\x1b[38;5;42m");
@@ -70,7 +67,7 @@ fn enable_windows_ansi_support() -> io::Result<()> {
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct RippySchema {
     pub root: Option<&'static str>,
     pub dir: Option<&'static str>,

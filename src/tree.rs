@@ -20,7 +20,7 @@ use serde_json::json;
 use indexmap::IndexMap; // Ordered map
 use ahash::AHasher; // Faster hashing
 
-type TreeMap<K, V> = IndexMap<K, V, BuildHasherDefault<AHasher>>; // TreeMap type alias
+pub type TreeMap = IndexMap<String, Tree, BuildHasherDefault<AHasher>>; // TreeMap type alias
 
 /// Units to scale size value accordingly
 const KB:f64 = 1_000.0;
@@ -39,7 +39,6 @@ pub enum EntryType {
     Directory,
     File,
 }
-
 // Implement Display for EntryType to convert to string
 impl fmt::Display for EntryType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -47,8 +46,26 @@ impl fmt::Display for EntryType {
     }
 }
 
+/// Implementation of Iterable trait for Tree for integration tests.
+pub struct TreeIter<'a> {
+    stack: Vec<&'a Tree>
+}
+impl<'a> Iterator for TreeIter<'a> {
+    type Item = &'a Tree;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(current) = self.stack.pop() {
+            for child in current.children.values().rev() {
+                self.stack.push(child);
+            }
+            Some(current)
+        } else {
+            None
+        }
+    }
+}
 /// Primary struct for tree module, providing methods for core functionality.
-#[derive(Clone, Serialize, Deserialize)] // Derive Serialize and Deserialize
+#[derive(Clone, Serialize, Deserialize, PartialEq)] // Derive Serialize and Deserialize
 pub struct Tree {
     pub display: String,
     pub name: String,
@@ -58,7 +75,7 @@ pub struct Tree {
     pub size: Option<u64>,
     pub window: Option<String>,
     pub fmt_width: Option<usize>,
-    pub children: TreeMap<String, Tree>,
+    pub children: TreeMap,
 }
 
 impl From<TreeLeaf> for Tree {
@@ -87,8 +104,7 @@ impl Tree {
             children: TreeMap::default(),
         }
     }
-
-    /// REVISED: Creates a new `Tree` given a path explicitely for creating missing `Directory` components. Assumes path given is already standardized to contain forward slashes only.
+    /// Creates a new `Tree` given a path explicitely for creating missing `Directory` components. Assumes path given is already standardized to contain forward slashes only.
     pub fn from_dir(path: std::path::PathBuf, args: &RippyArgs) -> Self {
         let name = path.file_name().map_or_else(|| path.to_string_lossy().to_string(), |p| p.to_string_lossy().to_string());
         let display = if args.show_relative_path {
@@ -111,7 +127,6 @@ impl Tree {
         let (fmt_width, window, children) = (None, None, TreeMap::default());
         Tree { display, name, path: None, entry_type, last_modified, size, fmt_width, window, children }
     }
-
     /// Recursively calculates the size of directories based on their children
     pub fn calculate_sizes(&mut self) {
         if self.entry_type == EntryType::Directory {
@@ -126,7 +141,6 @@ impl Tree {
             self.size = Some(total_size);
         }
     }
-
     /// Calculates the max file name length for all the files in a single directory and assigns that value to the self.fmt_width property for the directory and its children.
     pub fn calculate_fmt_width(&mut self) {
         if self.entry_type == EntryType::Directory {
@@ -151,7 +165,6 @@ impl Tree {
             }
         }
     }
-
     /// LEGACY: Recursively prints the tree structure tied to the `Tree` instance directly as an uncolored legacy version compatible with `tree` output.
     /// For example, using a valid object of type `Tree`, call with:
     /// 
@@ -202,14 +215,13 @@ impl Tree {
             println!("");
         }
     }
-
     /// Converts the Tree structure to JSON and writes it to a file
     pub fn write_to_json_file(&self, settings: &RippyArgs) -> std::io::Result<()> {
         // Harmonize into expected generic type
         let file_path = &settings.output;
 
         // Use a closure to capture `settings`
-        let convert_children = |children: &TreeMap<String, Tree>| {
+        let convert_children = |children: &TreeMap| {
             children.values().map(|child| child.to_json(settings)).collect::<Vec<serde_json::Value>>()
         };
 
@@ -234,7 +246,7 @@ impl Tree {
 
     /// Converts the Tree structure to JSON Value
     pub fn to_json(&self, settings: &RippyArgs) -> serde_json::Value {
-        let convert_children = |children: &TreeMap<String, Tree>| {
+        let convert_children = |children: &TreeMap| {
             children.values().map(|child| child.to_json(settings)).collect::<Vec<serde_json::Value>>()
         };
         json!({
@@ -246,7 +258,6 @@ impl Tree {
             "children": convert_children(&self.children),
         })
     }
-
     /// Tree for root with specific considerations for rendering and pathing traversal to facilitate construction and building. Expected display field assigned to name for both name and relative path option, using full path when canonical argument is present.
     pub fn new_root(root:&std::path::PathBuf, args: &RippyArgs) -> Self {
         // No distinction is made between show_relative_path or not for root of tree, only if full path needed is relevant as root name will be used for building/traversal
@@ -260,6 +271,10 @@ impl Tree {
         // Create root of tree from directory provided in initial args and a relative path with "/" suffix that can be used for traversal and component building.
         Tree::new( root_name, name, None, EntryType::Directory, None, None, None, None )
     }
+    /// Implements a depth-first iterator for `Tree` to traverse the children elements matching the same pre-sorted order as rippy.
+    pub fn iter(&self) -> TreeIter {
+        TreeIter { stack: vec![self] }
+    }  
 }
 
 impl std::fmt::Debug for Tree {
@@ -453,8 +468,8 @@ fn count_digits_log(n: usize) -> usize {
     ((n as f64).log(10.0).floor() as usize) + 1
 }
 
-/// REVISED WITHOUT COLOR CHECK: Creates the graphical terminal representation of the tree by iteratively printing the tree line by line using specified settings with active TTY check for ANSI coloring.
-fn write_tree_to_buf(tree: &mut Tree, enumeration: &str, depth: u32, prefix: &str, is_last: bool, args: &RippyArgs, counts: &mut TreeCounts, writer: &mut impl Write) -> io::Result<()> {
+/// Creates the graphical terminal representation of the tree by iteratively printing the tree line by line using specified settings with active TTY check for ANSI coloring.
+pub fn write_tree_to_buf(tree: &mut Tree, enumeration: &str, depth: u32, prefix: &str, is_last: bool, args: &RippyArgs, counts: &mut TreeCounts, writer: &mut impl Write) -> io::Result<()> {
     // Establish display name format
     let display_name = &tree.display;
     // Handle optional display time or date last modified of contents
