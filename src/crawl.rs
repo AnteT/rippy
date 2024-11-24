@@ -68,6 +68,9 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
         .follow_links(args.is_follow_links)
         .process_read_dir(|_depth, _path, ignorer, children| {
             
+            // Track within directories whether new matcher requires second iteration
+            let mut requires_second_filter = false;
+
             // 1. Custom filter first pass
             children.retain(|dir_entry_result| {
                 dir_entry_result.as_ref().map_or(false, |dir_entry| {
@@ -83,6 +86,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
                             if is_hidden_file && args.is_gitignore && fname == ".gitignore" {
                                 // Grab the .gitignore file now unless user wants to include all
                                 *ignorer = Ignorer::new(&dir_entry_path);
+                                requires_second_filter = true;
                             }
                             // Separated checks for hidden file and gitignored file
                             if !args.include_all && is_hidden_file {
@@ -106,7 +110,7 @@ pub fn crawl_directory(args: &'static RippyArgs) -> std::io::Result<CrawlResults
             });
 
             // 2. Custom filter second pass if needed due to gitignore initialization point
-            if args.is_gitignore && ignorer.has_matcher() {
+            if args.is_gitignore && ignorer.has_matcher() && requires_second_filter {
                 children.retain(|dir_entry_result| {
                     dir_entry_result.as_ref().map_or(false, |dir_entry| {
                         let dir_entry_ftype = dir_entry.file_type;
