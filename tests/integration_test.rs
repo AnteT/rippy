@@ -14,6 +14,11 @@ mod tests {
 
     use crate::common::{generate_args_from, generate_tree_map, DirError, RootDirectory};
 
+    /// Sorts by `TreeLeaf.relative_path` field to make comparisons platform agnostic before equality assertion.
+    const SORT_RELATIVE: fn(&TreeLeaf, &TreeLeaf) -> std::cmp::Ordering = |a: &TreeLeaf, b: &TreeLeaf| a.relative_path.cmp(&b.relative_path);
+    /// Sorts by the second element in a tuple to make comparisons platform agnostic before equality assertion.
+    const SORT_SECOND: fn(&(&str, &str), &(&str, &str)) -> std::cmp::Ordering = |a: &(&str, &str), b: &(&str, &str)| a.1.cmp(&b.1);
+
     #[test]
     /// Tests all major program arguments including search include & ignore patterns, primary search target, max depth and case sensitivity application.
     pub fn test_rippy_arguments() {
@@ -82,7 +87,7 @@ mod tests {
         test_dir.generate("a/file.txt", file_contents)?;
         test_dir.generate("a/b/file.txt", file_contents)?;
         test_dir.generate("a/b/c/file.txt", file_contents)?;
-        let expected_crawl_results = CrawlResults { 
+        let mut expected_crawl_results = CrawlResults { 
             paths: vec![
                 TreeLeaf {name: "a".to_string(),relative_path: "fake-tall/a".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "a".to_string(),is_sym: false,},
                 TreeLeaf {name: "b".to_string(),relative_path: "fake-tall/a/b".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "b".to_string(),is_sym: false,},
@@ -94,8 +99,10 @@ mod tests {
             ],
             paths_searched: 4,
             };
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&ARGS)?;
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         test_dir.clean()
     }
 
@@ -125,7 +132,7 @@ mod tests {
         test_dir.generate("a/file.txt", no_contents)?;
         test_dir.generate("b/file.txt", no_contents)?;
         test_dir.generate("c/file.txt", no_contents)?;
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: "a".to_string(),relative_path: "fake-wide/a".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "a".to_string(),is_sym: false,},
                 TreeLeaf {name: "file.txt".to_string(),relative_path: "fake-wide/a/file.txt".to_string(),is_dir: false,last_modified: None,size: None,window: None,display: "file.txt".to_string(),is_sym: false,},
@@ -137,8 +144,10 @@ mod tests {
             ],
             paths_searched: 4,
         };
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&ARGS)?;
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         test_dir.clean()
     }
 
@@ -174,7 +183,7 @@ mod tests {
         test_dir.generate("b3/x2.md",  Some("456wrongext should match but wont return due to wrong extension"))?;
         test_dir.generate("b4/i1.txt", Some("123wrongdir should match but wont return due to ignored dir"))?;
         test_dir.generate("b4/i2.txt", Some("123wrongdir should match but wont return due to ignored dir"))?;
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: "f1.txt".to_string(),relative_path: "fake-search/b1/f1.txt".to_string(),is_dir: false,last_modified: None,size: None,window: Some("\u{1b}[38;5;248m...\u{1b}[0m\u{1b}[38;5;248mand should return: \u{1b}[0m\u{1b}[1m\u{1b}[38;5;42m123xyz\u{1b}[0m\u{1b}[38;5;248m\u{1b}[0m".to_string(),),display: "f1.txt".to_string(),is_sym: false,},
                 TreeLeaf {name: "f1.txt".to_string(),relative_path: "fake-search/b2/f1.txt".to_string(),is_dir: false,last_modified: None,size: None,window: Some("\u{1b}[38;5;248m\u{1b}[0m\u{1b}[1m\u{1b}[38;5;42m789\u{1b}[0m\u{1b}[38;5;248m Should match and re\u{1b}[0m\u{1b}[38;5;248m...\u{1b}[0m".to_string(),),display: "f1.txt".to_string(),is_sym: false,},
@@ -182,8 +191,10 @@ mod tests {
             ],
             paths_searched: 6,
         };
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&ARGS)?;
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         test_dir.clean()
     }
 
@@ -220,7 +231,7 @@ mod tests {
         assert_eq!(crawl_results.unwrap(), expected_crawl_results);
 
         static ARGS_ALL: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--all", ROOT_TEST_DIR]));
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: ".hidden".to_string(),relative_path: "fake-hidden/.hidden".to_string(),is_dir: false,last_modified: None,size: None,window: None,display: ".hidden".to_string(),is_sym: false,},
                 TreeLeaf {name: "d1".to_string(),relative_path: "fake-hidden/d1".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "d1".to_string(),is_sym: false,},
@@ -228,8 +239,10 @@ mod tests {
             ],
             paths_searched: 2,
         };
-        let crawl_results = crawl::crawl_directory(&ARGS_ALL);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&ARGS_ALL)?;
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         test_dir.clean()
     }    
 
@@ -258,7 +271,7 @@ mod tests {
         test_dir.generate("depth-1.txt", no_contents)?;
         test_dir.generate("d1/d2/depth-3.txt", no_contents)?;
         test_dir.generate("d1/d2/d3/d4/d5/d6/depth-7.txt", no_contents)?;
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: "d1".to_string(),relative_path: "fake-depth/d1".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "d1".to_string(),is_sym: false,},
                 TreeLeaf {name: "d2".to_string(),relative_path: "fake-depth/d1/d2".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "d2".to_string(),is_sym: false,},
@@ -268,8 +281,10 @@ mod tests {
             ],
             paths_searched: 2,
         };
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&ARGS)?;
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         // println!("{crawl_results:#?}");
         test_dir.clean()
     }        
@@ -301,7 +316,7 @@ mod tests {
         test_dir.generate("01234.d", no_contents)?;
         test_dir.generate("56789.d", no_contents)?;
         test_dir.generate("src/main.rs", no_contents)?;
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: "README.md".to_string(),relative_path: "fake-gitignore/README.md".to_string(),is_dir: false,last_modified: None,size: None,window: None,display: "README.md".to_string(),is_sym: false,},
                 TreeLeaf {name: "src".to_string(),relative_path: "fake-gitignore/src".to_string(),is_dir: true,last_modified: None,size: None,window: None,display: "src".to_string(),is_sym: false,},
@@ -309,11 +324,13 @@ mod tests {
             ],
             paths_searched: 2,
         };
-        let crawl_results = crawl::crawl_directory(&USE_GITIGNORE_ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&USE_GITIGNORE_ARGS)?;
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
 
         static NO_GITIGNORE_ARGS: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--no-gitignore", ROOT_TEST_DIR]));
-        let expected_crawl_results = CrawlResults {
+        let mut expected_crawl_results = CrawlResults {
             paths: vec![
                 TreeLeaf {name: "01234.d".to_string(),relative_path: "fake-gitignore/01234.d".to_string(),is_dir: false,last_modified: None,size: None,window: None,display: "01234.d".to_string(),is_sym: false,},
                 TreeLeaf {name: "56789.d".to_string(),relative_path: "fake-gitignore/56789.d".to_string(),is_dir: false,last_modified: None,size: None,window: None,display: "56789.d".to_string(),is_sym: false,},
@@ -327,8 +344,10 @@ mod tests {
             ],
             paths_searched: 6,
         };
-        let crawl_results = crawl::crawl_directory(&NO_GITIGNORE_ARGS);
-        assert_eq!(crawl_results.unwrap(), expected_crawl_results);
+        let mut output_crawl_results = crawl::crawl_directory(&NO_GITIGNORE_ARGS)?;
+        expected_crawl_results.paths.sort_by(SORT_RELATIVE);
+        output_crawl_results.paths.sort_by(SORT_RELATIVE);
+        assert_eq!(output_crawl_results, expected_crawl_results);
         test_dir.clean()
     }   
 
@@ -382,7 +401,9 @@ mod tests {
     ///  ├── 1.txt
     ///  ├── 3.txt
     ///  ├── 5.txt
-    ///  ├── A
+    ///  ├── E
+    ///  ├── a
+    ///  │   ├── 1.txt
     ///  │   ├── 2.txt
     ///  │   ╰── 3.txt
     ///  ├── b
@@ -392,7 +413,7 @@ mod tests {
     ///      ├── aa.txt
     ///      ╰── ab.txt
     /// 
-    /// 3 directories, 9 files
+    /// 4 directories, 10 files
     /// ```
     /// 
     /// Testing functionality of `[--sort | -B]` and `[--reverse | -Z]` sorting tree by name in ascending and descending order.
@@ -402,9 +423,10 @@ mod tests {
 
         let no_contents: Option<&str> = None;
         let test_dir = RootDirectory::new(ROOT_TEST_DIR);
-        test_dir.create_directory("A")?;
+        test_dir.create_directory("E")?;
         test_dir.generate("3.txt", no_contents)?;
         test_dir.generate("1.txt", no_contents)?;
+        test_dir.generate("a/1.txt", no_contents)?;
         test_dir.generate("a/2.txt", no_contents)?;
         test_dir.generate("a/3.txt", no_contents)?;
         test_dir.generate("b/a.txt", no_contents)?;
@@ -412,37 +434,23 @@ mod tests {
         test_dir.generate("5.txt", no_contents)?;
         test_dir.generate("z/aa.txt", no_contents)?;
         test_dir.generate("z/ab.txt", no_contents)?;
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS);
-        received_output.children.sort_by(|_, a, _, b| (&ARGS.sort_by)(a, b));        
-        let order_received: Vec<_> = received_output.children.clone().into_iter().collect();
-        let order_expected = vec![
-            ("1.txt".to_string(),Tree {display: "1.txt".to_string(),name: "1.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/1.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-            ("3.txt".to_string(),Tree {display: "3.txt".to_string(),name: "3.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/3.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-            ("5.txt".to_string(),Tree {display: "5.txt".to_string(),name: "5.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/5.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-            ("A".to_string(),Tree {display: "A".to_string(),name: "A".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("2.txt".to_string(), Tree { display: "2.txt".to_string(), name: "2.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/A/2.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("3.txt".to_string(), Tree { display: "3.txt".to_string(), name: "3.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/A/3.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-            ("b".to_string(),Tree {display: "b".to_string(),name: "b".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("a.txt".to_string(), Tree { display: "a.txt".to_string(), name: "a.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/b/a.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("z.txt".to_string(), Tree { display: "z.txt".to_string(), name: "z.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/b/z.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-            ("z".to_string(),Tree {display: "z".to_string(),name: "z".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("aa.txt".to_string(), Tree { display: "aa.txt".to_string(), name: "aa.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/z/aa.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("ab.txt".to_string(), Tree { display: "ab.txt".to_string(), name: "ab.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/z/ab.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-        ];
+        let crawl_results = crawl::crawl_directory(&ARGS)?;
+        let received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS);
+        let mut received_output: Vec<&Tree> = received_output.iter().collect();
+        received_output.sort_by(|a, b| (&ARGS.sort_by)(a, b));  
+        let received_output: Vec<_> = received_output.iter().map(|t| t.name.clone()).collect();
+        let mut expected_output: Vec<_> = vec!["1.txt", "1.txt", "2.txt", "3.txt", "3.txt", "5.txt", "E", "a", "a.txt", "aa.txt", "ab.txt", "b", "fake-sort-name", "z", "z.txt"].iter().map(|s| s.to_owned()).collect();
+        assert_eq!(received_output, expected_output);
 
-        assert_eq!(order_expected, order_received);
-
-        // Test `--reverse` sorting order
-        static ARGS_REVERSED: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--sort", "name", "--reverse", ROOT_TEST_DIR]));
-        let crawl_results = crawl::crawl_directory(&ARGS_REVERSED);
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_REVERSED);
-        received_output.children.sort_by(|_, a, _, b| (&ARGS_REVERSED.sort_by)(a, b));        
-        let order_received: Vec<_> = received_output.children.clone().into_iter().collect();
-
-        let order_expected = [
-            ("z".to_string(),Tree {display: "z".to_string(),name: "z".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("aa.txt".to_string(), Tree { display: "aa.txt".to_string(), name: "aa.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/z/aa.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("ab.txt".to_string(), Tree { display: "ab.txt".to_string(), name: "ab.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/z/ab.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-            ("b".to_string(),Tree {display: "b".to_string(),name: "b".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("a.txt".to_string(), Tree { display: "a.txt".to_string(), name: "a.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/b/a.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("z.txt".to_string(), Tree { display: "z.txt".to_string(), name: "z.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/b/z.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-            ("A".to_string(),Tree {display: "A".to_string(),name: "A".to_string(),path: None,entry_type: EntryType::Directory,last_modified: None,size: None,window: None,fmt_width: None,children: generate_tree_map([("2.txt".to_string(), Tree { display: "2.txt".to_string(), name: "2.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/A/2.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() }), ("3.txt".to_string(), Tree { display: "3.txt".to_string(), name: "3.txt".to_string(), path: Some(PathBuf::from("fake-sort-name/A/3.txt")), entry_type: EntryType::File, last_modified: None, size: None, window: None, fmt_width: None, children: TreeMap::default() })]),},),
-            ("5.txt".to_string(),Tree {display: "5.txt".to_string(),name: "5.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/5.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-            ("3.txt".to_string(),Tree {display: "3.txt".to_string(),name: "3.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/3.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-            ("1.txt".to_string(),Tree {display: "1.txt".to_string(),name: "1.txt".to_string(),path: Some(PathBuf::from("fake-sort-name/1.txt")),entry_type: EntryType::File,last_modified: None,size: None,window: None,fmt_width: None,children: TreeMap::default(),},),
-        ];
-        assert_eq!(order_received, order_expected);
+        // Test reversed ordering
+        static ARGS_REVERSED: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--sort", "name", ROOT_TEST_DIR, "--reverse"]));
+        let crawl_results = crawl::crawl_directory(&ARGS_REVERSED)?;
+        let received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS_REVERSED);
+        let mut received_output: Vec<&Tree> = received_output.iter().collect();
+        received_output.sort_by(|a, b| (&ARGS_REVERSED.sort_by)(a, b));  
+        let received_output: Vec<_> = received_output.iter().map(|t| t.name.clone()).collect();
+        expected_output.reverse();
+        assert_eq!(received_output, expected_output);
         test_dir.clean()
     }    
 
@@ -552,14 +560,14 @@ mod tests {
         let no_contents: Option<&str> = None;
         let test_dir = RootDirectory::new(ROOT_TEST_DIR);
         test_dir.create_file("time-0.txt", no_contents)?;
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(10));
         test_dir.create_file("time-1.txt", no_contents)?;
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(10));
         test_dir.create_file("time-2.txt", no_contents)?;
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(10));
         test_dir.create_file("time-3.txt", no_contents)?;
-        let crawl_results = crawl::crawl_directory(&ARGS);
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS);
+        let crawl_results = crawl::crawl_directory(&ARGS)?;
+        let mut received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS);
         received_output.children.sort_by(|_, a, _, b| (&ARGS.sort_by)(a, b));     
         let order_received: Vec<_> = received_output.children.keys().collect();
         
@@ -568,8 +576,8 @@ mod tests {
         
         // Test `--reverse` sorting order
         static ARGS_REVERSED: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--sort", "date", "--date", "--reverse", ROOT_TEST_DIR]));
-        let crawl_results = crawl::crawl_directory(&ARGS_REVERSED);
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_REVERSED);
+        let crawl_results = crawl::crawl_directory(&ARGS_REVERSED)?;
+        let mut received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS_REVERSED);
         received_output.children.sort_by(|_, a, _, b| (&ARGS_REVERSED.sort_by)(a, b));        
         let order_received: Vec<_> = received_output.children.keys().collect();
         order_expected.reverse();
@@ -598,6 +606,7 @@ mod tests {
     pub fn test_tree_display_pathing() -> Result<(), DirError> {
         const ROOT_TEST_DIR: &'static str = "fake-paths";
         static ARGS_RELATIVE: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--relative-path", ROOT_TEST_DIR]));
+
         let no_contents: Option<&str> = None;
         let test_dir = RootDirectory::new(ROOT_TEST_DIR);
         test_dir.generate("a/f1.txt", no_contents)?;
@@ -607,8 +616,10 @@ mod tests {
         let crawl_results = crawl::crawl_directory(&ARGS_RELATIVE); 
         let received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_RELATIVE);
         let received_output: Vec<_> = received_output.iter().map(|child| (child.name.clone(), child.display.clone())).collect();
-        let received_output = received_output.iter().map(|(k,v)| (k.as_str(), v.as_str())).collect::<Vec<(&str, &str)>>();
-        let expected_output = vec![("fake-paths", "fake-paths"), ("a", "fake-paths/a"), ("f1.txt", "fake-paths/a/f1.txt"), ("x", "fake-paths/a/x"), ("f1.txt", "fake-paths/a/x/f1.txt"), ("b", "fake-paths/b"), ("f1.txt", "fake-paths/b/f1.txt"), ("x", "fake-paths/b/x"), ("f1.txt", "fake-paths/b/x/f1.txt")];
+        let mut received_output = received_output.iter().map(|(k,v)| (k.as_str(), v.as_str())).collect::<Vec<(&str, &str)>>();
+        let mut expected_output = vec![("fake-paths", "fake-paths"), ("a", "fake-paths/a"), ("f1.txt", "fake-paths/a/f1.txt"), ("x", "fake-paths/a/x"), ("f1.txt", "fake-paths/a/x/f1.txt"), ("b", "fake-paths/b"), ("f1.txt", "fake-paths/b/f1.txt"), ("x", "fake-paths/b/x"), ("f1.txt", "fake-paths/b/x/f1.txt")];
+        expected_output.sort_by(SORT_SECOND);
+        received_output.sort_by(SORT_SECOND);
         assert_eq!(received_output, expected_output);
         
         // Absolute paths
@@ -617,7 +628,7 @@ mod tests {
         let crawl_results = crawl::crawl_directory(&ARGS_FULL); 
         let received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_FULL);
         let received_output: Vec<_> = received_output.iter().map(|child| (child.name.clone(), child.display.clone())).collect();
-        let received_output = received_output.iter().map(|(k,v)| (k.to_owned(), v.to_owned())).collect::<Vec<(String, String)>>();
+        let mut received_output = received_output.iter().map(|(k,v)| (k.as_str(), v.as_str())).collect::<Vec<(&str, &str)>>();
         let expected_output = vec![
             (cwd.join("fake-paths").to_string_lossy().replace("\\", "/"), cwd.join("fake-paths").to_string_lossy().replace("\\", "/")),
             ("a".to_string(), cwd.join("fake-paths/a").to_string_lossy().replace("\\", "/")),
@@ -629,6 +640,9 @@ mod tests {
             ("x".to_string(), cwd.join("fake-paths/b/x").to_string_lossy().replace("\\", "/")), 
             ("f1.txt".to_string(), cwd.join("fake-paths/b/x/f1.txt").to_string_lossy().replace("\\", "/"))
             ];
+        let mut expected_output = expected_output.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect::<Vec<(&str, &str)>>();
+        expected_output.sort_by(SORT_SECOND);
+        received_output.sort_by(SORT_SECOND);
         assert_eq!(received_output, expected_output);
         test_dir.clean()
     }
@@ -655,8 +669,10 @@ mod tests {
         test_dir.generate("docs/empty.txt", no_contents)?;
         test_dir.generate("docs/short.txt", target_contents)?;
         test_dir.generate("docs/very-long-file-name.txt", target_contents)?;
-        let crawl_results = crawl::crawl_directory(&ARGS); 
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS);    
+        let mut crawl_results = crawl::crawl_directory(&ARGS)?; 
+        crawl_results.paths.sort_by(|a, b| a.name.cmp(&b.name));
+        
+        let mut received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS);    
         received_output.calculate_fmt_width();
         let expected_output = vec![
             ("fake-fmt-width".to_string(), None, None),
@@ -669,8 +685,9 @@ mod tests {
 
         // Test with smaller radius
         static ARGS_SMALLER_RADIUS: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--window-radius", "0", ROOT_TEST_DIR, "X"]));
-        let crawl_results = crawl::crawl_directory(&ARGS_SMALLER_RADIUS); 
-        let mut received_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_SMALLER_RADIUS);    
+        let mut crawl_results = crawl::crawl_directory(&ARGS_SMALLER_RADIUS)?; 
+        crawl_results.paths.sort_by(|a, b| a.name.cmp(&b.name));
+        let mut received_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS_SMALLER_RADIUS);    
         received_output.calculate_fmt_width();
         let expected_output = vec![
             ("fake-fmt-width".to_string(), None, None),
@@ -742,11 +759,10 @@ mod tests {
     /// 
     /// Testing functionality of `[--gray | -G]` and `[--reverse | -z]` and `tree::write_tree_to_buf` for tree rendering.
     pub fn test_write_tree_to_buf() -> Result<(), DirError> {
-        const ROOT_TEST_DIR: &'static str = "fake-writer";
+        const ROOT_TEST_DIR: &'static str = "fake-presorted-writer";
         static ARGS_COLORED: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--reverse", ROOT_TEST_DIR]));
         let no_contents: Option<&str> = None;
         let test_dir = RootDirectory::new(ROOT_TEST_DIR);
-        test_dir.generate("dist/prog.exe", no_contents)?;
         test_dir.generate("src/prog.rs", no_contents)?;
         test_dir.generate("src/mod.rs", no_contents)?;
         test_dir.create_file("LICENSE", no_contents)?;
@@ -756,33 +772,35 @@ mod tests {
         test_dir.generate("Cargo.lock", no_contents)?;
         test_dir.generate("build.rs", no_contents)?;
         test_dir.generate("notes.txt", no_contents)?;
-        let crawl_results = crawl::crawl_directory(&ARGS_COLORED); 
+        let mut crawl_results = crawl::crawl_directory(&ARGS_COLORED)?; 
+        crawl_results.paths.sort_by(SORT_RELATIVE);
         let mut counts = tree::TreeCounts::new();
-        let mut tree_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_COLORED);     
+        let mut tree_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS_COLORED);     
         let mut buf_output = Vec::new();
         {
             let mut writer = std::io::BufWriter::new(&mut buf_output);
             tree::write_tree_to_buf(&mut tree_output, "", 0, "", true, &ARGS_COLORED, &mut counts, &mut writer)?;
         }
-        let output_expected = " \u{1b}[1m\u{1b}[38;5;220mfake-writer\u{1b}[0m\n \u{1b}[38;5;220m├── \u{1b}[0m\u{1b}[1m\u{1b}[38;5;80msrc\u{1b}[0m\n \u{1b}[38;5;220m│\u{1b}[0m\u{a0}\u{a0} \u{1b}[38;5;80m├── \u{1b}[0mprog.rs\n \u{1b}[38;5;220m│\u{1b}[0m\u{a0}\u{a0} \u{1b}[38;5;80m╰── \u{1b}[0mmod.rs\n \u{1b}[38;5;220m├── \u{1b}[0m\u{1b}[1m\u{1b}[38;5;80mdist\u{1b}[0m\n \u{1b}[38;5;220m│\u{1b}[0m\u{a0}\u{a0} \u{1b}[38;5;80m╰── \u{1b}[0m\u{1b}[38;5;211mprog.exe\u{1b}[0m\n \u{1b}[38;5;220m├── \u{1b}[0mREADME.md\n \u{1b}[38;5;220m├── \u{1b}[0mLICENSE\n \u{1b}[38;5;220m├── \u{1b}[0mCargo.toml\n \u{1b}[38;5;220m╰── \u{1b}[0mCargo.lock\n\n";
+        let output_expected = " \u{1b}[1m\u{1b}[38;5;220mfake-presorted-writer\u{1b}[0m\n \u{1b}[38;5;220m├── \u{1b}[0m\u{1b}[1m\u{1b}[38;5;80msrc\u{1b}[0m\n \u{1b}[38;5;220m│\u{1b}[0m\u{a0}\u{a0} \u{1b}[38;5;80m├── \u{1b}[0mprog.rs\n \u{1b}[38;5;220m│\u{1b}[0m\u{a0}\u{a0} \u{1b}[38;5;80m╰── \u{1b}[0mmod.rs\n \u{1b}[38;5;220m├── \u{1b}[0mREADME.md\n \u{1b}[38;5;220m├── \u{1b}[0mLICENSE\n \u{1b}[38;5;220m├── \u{1b}[0mCargo.toml\n \u{1b}[38;5;220m╰── \u{1b}[0mCargo.lock\n\n";
         let output_received = String::from_utf8(buf_output).unwrap();
         assert_eq!(output_received, output_expected);
-        assert_eq!(counts, tree::TreeCounts{ dir_count: 2, file_count: 7});
-
+        assert_eq!(counts, tree::TreeCounts{ dir_count: 1, file_count: 6});
+        
         // Same test but modify color, sort and gitignore options to test representation changes
         static ARGS_NO_COLOR: LazyLock<rippy::args::RippyArgs> = LazyLock::new(|| generate_args_from(vec!["rippy", "--gray", "--no-gitignore", ROOT_TEST_DIR]));
-        let crawl_results = crawl::crawl_directory(&ARGS_NO_COLOR); 
+        let mut crawl_results = crawl::crawl_directory(&ARGS_NO_COLOR)?; 
+        crawl_results.paths.sort_by(SORT_RELATIVE);
         let mut counts = tree::TreeCounts::new();
-        let mut tree_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS_NO_COLOR);     
+        let mut tree_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS_NO_COLOR);     
         let mut buf_output = Vec::new();
         {
             let mut writer = std::io::BufWriter::new(&mut buf_output);
             tree::write_tree_to_buf(&mut tree_output, "", 0, "", true, &ARGS_NO_COLOR, &mut counts, &mut writer)?;
         }
-        let output_expected = " fake-writer\n ├── Cargo.lock\n ├── Cargo.toml\n ├── LICENSE\n ├── README.md\n ├── build.rs\n ├── dist\n │\u{a0}\u{a0} ╰── prog.exe\n ├── notes.txt\n ╰── src\n \u{a0}\u{a0}  ├── mod.rs\n \u{a0}\u{a0}  ╰── prog.rs\n\n";
+        let output_expected = " fake-presorted-writer\n ├── Cargo.lock\n ├── Cargo.toml\n ├── LICENSE\n ├── README.md\n ├── build.rs\n ├── notes.txt\n ╰── src\n \u{a0}\u{a0}  ├── mod.rs\n \u{a0}\u{a0}  ╰── prog.rs\n\n";
         let output_received = String::from_utf8(buf_output).unwrap();
         assert_eq!(output_received, output_expected);
-        assert_eq!(counts, tree::TreeCounts{ dir_count: 2, file_count: 9});
+        assert_eq!(counts, tree::TreeCounts{ dir_count: 1, file_count: 8});
         test_dir.clean()
     }
 
@@ -817,8 +835,9 @@ mod tests {
         test_dir.generate("README.md", Some("X".repeat(78)))?;
         test_dir.generate("Cargo.toml", Some("X".repeat(224)))?;
         test_dir.generate("Cargo.lock", Some("X".repeat(566)))?;
-        let crawl_results = crawl::crawl_directory(&ARGS); 
-        let tree_output = tree::build_tree_from_paths(crawl_results.unwrap().paths, &ARGS);     
+        let mut crawl_results = crawl::crawl_directory(&ARGS)?; 
+        crawl_results.paths.sort_by(SORT_RELATIVE);
+        let tree_output = tree::build_tree_from_paths(crawl_results.paths, &ARGS);     
         tree_output.write_to_json_file(&ARGS)?;
 
         // Read the file back and deserialize
@@ -849,6 +868,22 @@ mod tests {
                 "children": []
               },
               {
+                "name": "LICENSE",
+                "entry_type": "File",
+                "last_modified": null,
+                "size": null,
+                "window": null,
+                "children": []
+              },
+              {
+                "name": "README.md",
+                "entry_type": "File",
+                "last_modified": null,
+                "size": null,
+                "window": null,
+                "children": []
+              },
+              {
                 "name": "dist",
                 "entry_type": "Directory",
                 "last_modified": null,
@@ -864,22 +899,6 @@ mod tests {
                     "children": []
                   }
                 ]
-              },
-              {
-                "name": "LICENSE",
-                "entry_type": "File",
-                "last_modified": null,
-                "size": null,
-                "window": null,
-                "children": []
-              },
-              {
-                "name": "README.md",
-                "entry_type": "File",
-                "last_modified": null,
-                "size": null,
-                "window": null,
-                "children": []
               },
               {
                 "name": "src",
@@ -910,4 +929,5 @@ mod tests {
           }));
         test_dir.clean()
     }
+
 }
