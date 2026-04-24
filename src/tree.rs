@@ -272,7 +272,7 @@ impl Tree {
         Tree::new( root_name, name, None, EntryType::Directory, None, None, None, None )
     }
     /// Implements a depth-first iterator for `Tree` to traverse the children elements matching the same pre-sorted order as rippy.
-    pub fn iter(&self) -> TreeIter {
+    pub fn iter(&self) -> TreeIter<'_> {
         TreeIter { stack: vec![self] }
     }  
 }
