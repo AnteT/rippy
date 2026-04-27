@@ -66,6 +66,26 @@ impl SearchQuery {
             .any(|group| group.iter().all(|term_id| matched_terms.get(*term_id).copied().unwrap_or(false)))
     }
 
+    pub fn matching_term_ids(&self, matched_terms: &[bool]) -> Vec<usize> {
+        let mut matched_ids = Vec::new();
+
+        for group in &self.groups {
+            let group_matches = group
+                .iter()
+                .all(|term_id| matched_terms.get(*term_id).copied().unwrap_or(false));
+
+            if group_matches {
+                for term_id in group {
+                    if matched_terms.get(*term_id).copied().unwrap_or(false) && !matched_ids.contains(term_id) {
+                        matched_ids.push(*term_id);
+                    }
+                }
+            }
+        }
+
+        matched_ids
+    }
+
     pub fn term_count(&self) -> usize {
         self.terms.len()
     }
@@ -245,13 +265,14 @@ fn build_command() -> Command {
         .disable_version_flag(true)
         .disable_help_flag(true)
         .group(ArgGroup::new("search-root").args(["pattern", "search"]).multiple(false))
-        .after_help("For example, run `rippy \"./\"` to display a tree of the current directory's contents.")
+        .after_help("For example, run `rippy . -L 3` to display a tree of the current directory's contents to a max depth of 3 levels.")
         .arg(
             Arg::new("directory")
-                .help("Sets the root directory to search")
-                .value_name("DIRECTORY")
-                .required(true)
-                .index(1),
+               .help("Sets the root directory to search")
+               .value_name("DIRECTORY")
+               .required(false)
+               .default_value(".")
+               .index(1),
         )
         .arg(
             Arg::new("pattern")
@@ -353,6 +374,17 @@ fn build_command() -> Command {
                 .help("Restrict search to specific filename patterns"),
         )
         .arg(
+            Arg::new("max-display-matches")
+                .short('m')
+                .long("max-display-matches")
+                .aliases(["max-results", "max-matches", "max-search-results", "max-search", "max-searches"])
+                .value_name("COUNT")
+                .action(ArgAction::Set)
+                .display_order(6)
+                .value_parser(value_parser!(usize))
+                .help("Maximum number of search match windows to display per file"),
+        )        
+        .arg(
             Arg::new("window-radius")
                 .short('R')
                 .short_alias('r')
@@ -362,30 +394,20 @@ fn build_command() -> Command {
                 .default_value("20")
                 .value_parser(value_parser!(usize))
                 .hide_default_value(true)
-                .display_order(6)
+                .display_order(7)
                 .action(ArgAction::Set)
                 .help("Maximum character radius for result snippet window"),
-        )
+        )        
         .arg(
             Arg::new("max-files")
                 .short('M')
-                .short_alias('m')
                 .long("max-files")
                 .value_name("FILES")
-                .aliases(["max", "max-file"])
+                .aliases(["max-contents", "max-file"])
                 .action(ArgAction::Set)
-                .display_order(7)
+                .display_order(8)
                 .value_parser(value_parser!(usize))
                 .help("Maximum number of files to display for each directory"),
-        )
-        .arg(
-            Arg::new("max-display-matches")
-                .long("max-display-matches")
-                .aliases(["max-results", "max-matches"])
-                .value_name("COUNT")
-                .action(ArgAction::Set)
-                .value_parser(value_parser!(usize))
-                .help("Maximum number of search match windows to display per file"),
         )
         .arg(
             Arg::new("all-matches")
@@ -396,8 +418,7 @@ fn build_command() -> Command {
         .arg(
             Arg::new("dirs-only")
                 .long("dirs-only")
-                .alias("directories-only")
-                .alias("dirs")
+                .aliases(["dirs","dir-only","directories-only"])
                 .action(ArgAction::SetTrue)
                 .help("Display only directories in the tree"),
         )

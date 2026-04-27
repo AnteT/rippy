@@ -344,15 +344,13 @@ fn search_file(path: &str, args: &RippyArgs) -> std::io::Result<Option<Vec<Match
 
     let contents = std::fs::read_to_string(path)?;
     let mut matched_terms = vec![false; query.term_count()];
-    let mut hits: Vec<(usize, usize)> = Vec::new();
+    let mut term_hits: Vec<Vec<(usize, usize)>> = vec![Vec::new(); query.term_count()];
 
     for (term_id, term) in query.terms.iter().enumerate() {
-        let mut term_matched = false;
         for mat in term.regex.find_iter(&contents) {
-            term_matched = true;
-            hits.push((mat.start(), mat.end()));
+            matched_terms[term_id] = true;
+            term_hits[term_id].push((mat.start(), mat.end()));
         }
-        matched_terms[term_id] = term_matched;
     }
 
     if !query.is_match(&matched_terms) {
@@ -362,6 +360,13 @@ fn search_file(path: &str, args: &RippyArgs) -> std::io::Result<Option<Vec<Match
     if !args.is_window && !args.show_line_numbers {
         return Ok(Some(Vec::new()));
     }
+
+    let matching_term_ids = query.matching_term_ids(&matched_terms);
+
+    let mut hits: Vec<(usize, usize)> = matching_term_ids
+        .into_iter()
+        .flat_map(|term_id| term_hits[term_id].iter().copied())
+        .collect();
 
     hits.sort_unstable();
     hits.dedup();
