@@ -145,6 +145,8 @@ pub fn crawl_directory(args: &'static RippyArgs) -> Result<CrawlResults, RippyEr
                         }
 
                         if is_ftype_dir {
+                            // Always keep directories during traversal so we can still discover
+                            // matching descendants and so max-depth boundary directories are visible, no tree-pruning.
                             true
                         } else {
                             is_ftype_file
@@ -176,7 +178,6 @@ pub fn crawl_directory(args: &'static RippyArgs) -> Result<CrawlResults, RippyEr
         });
 
     let mut paths: Vec<TreeLeaf> = Vec::new();
-    let mut dir_entries: Vec<TreeLeaf> = Vec::new();
     let mut candidate_files: Vec<TreeLeaf> = Vec::new();
     let mut dir_map: HashMap<String, TreeLeaf> = HashMap::new();
     let mut paths_searched: usize = 0;
@@ -189,13 +190,21 @@ pub fn crawl_directory(args: &'static RippyArgs) -> Result<CrawlResults, RippyEr
         }
 
         let state = entry.client_state;
+
         if state.is_dir {
             dir_map.insert(state.relative_path.clone(), state.clone());
-            dir_entries.push(state.clone());
 
-            if !args.is_search && args.is_dirs_only {
-                paths.push(state);
+            if !args.is_search {
+                let dir_matches_include = args
+                    .include_patterns
+                    .as_ref()
+                    .map_or(true, |patterns| patterns.is_match(&state.name));
+
+                if dir_matches_include {
+                    paths.push(state);
+                }
             }
+
             continue;
         }
 

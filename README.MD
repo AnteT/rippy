@@ -1,246 +1,439 @@
 # Rippy CLI Tool
-`rippy` is an OS independent bastard love child of `tree` and `grep` with subdirectory pruning and multithreaded file pattern search.
+
+`rippy` is an OS-independent bastard love child of `tree` and `grep` with subdirectory pruning, `.gitignore` support, advanced filtering, and multithreaded file pattern search.
 
 ## Features
+
 - **Directory Tree Display**: Visualizes directory contents in a hierarchical tree format.
-- **Multithreaded Search**: Perform fast searches for patterns within files using `rayon` to parallelize and leverage multiple threads when possible.
-- **Advanced Filtering**: Filter entries with options to use any `.gitignore` files found for matching, or provide your own ignore or include patterns to use.
-- **Sorting Results**: Sort the tree output by name, date, size or type including in reverse order.
-- **Search Windowing**: Optionally shows snippets of file content around matching patterns.
-- **Customizable Output**: Display results as flat lists, include file size, dates, and more.
-- **Output to JSON**: Export the tree and search results to a file.
+- **Multithreaded Search**: Searches file contents in parallel using `rayon`.
+- **Regex Search**: Search file contents with regular expressions.
+- **Logical Search Operators**: Chain search terms with `--and` and `--or`.
+- **Search Windowing**: Shows snippets of file content around matching patterns by default.
+- **Line Numbers**: Displays matching line numbers as `path:line`.
+- **Multiple Matches Per File**: Display every match in a file with `--all-matches`, or cap results with `--max-display-matches`.
+- **Advanced Filtering**: Use `.gitignore` files, ignore patterns, include patterns, hidden file filtering, and directories-only output.
+- **Sorting Results**: Sort by name, date, size, or type, including reverse order.
+- **Customizable Output**: Display flat lists, full paths, relative paths, sizes, dates, enumerated entries, quoted paths, and more.
+- **Output to JSON**: Export tree and search results to a JSON file.
+- **Pretty Errors**: Invalid regexes and bad inputs now return readable error messages instead of panicking.
 
 ---
 
 ## Installation
-To install `rippy`, clone the repository and build it with `Cargo`:
+
+To install `rippy`, clone the repository and build it with Cargo:
 
 ```sh
 $ git clone https://github.com/AnteT/rippy.git
 $ cd rippy && cargo build --release
-```
+````
 
 ### Linux and macOS
-1. After building `rippy`, the executable will be located in `./target/release/rippy`, to save it to your path to make it globally accessible run:
 
-    ```sh
-    $ sudo cp target/release/rippy /usr/local/bin
-    ```
-
-2. Confirm the installation process was succesful by running:
-
-    ```sh
-    $ rippy --version
-    ```
-
-### Windows
-After building `rippy`, the executable will be located in `.\target\release\rippy.exe`, to make it globally accessible you can add it to your Windows `PATH` using these steps:
-
-1.  Navigate to the location containing `rippy` using the same PowerShell or Command Prompt session that was used to build it:
-
-    ```cmd
-    > cd .\target\release\
-    ```
-
-2. Copy the full path of the installation by grabbing it with:
-
-    ```cmd
-    > echo %cd%
-    ```
-
-3. Add the directory containing `rippy.exe` to your system `PATH`:
-   - Open the **Start Menu**, search for **Environment Variables**, and select **Edit the system environment variables**.
-   - In the **System Properties** window, click **Environment Variables**.
-   - Under **System variables**, select **Path** and click **Edit**.
-   - In the **Edit Environment Variables** window, click **New** and paste the path you copied (e.g., `C:\path\to\rippy\target\release`).
-   - Click **OK** to save the changes.
-
-4. To verify that `rippy` is accessible globally, open a new PowerShell or Command Prompt and run:
-
-   ```cmd
-   > rippy --version
-   ```
-
-## Usage
-To use `rippy`, simply run it from the command line:
+After building, the executable will be located at `./target/release/rippy`. To make it globally accessible:
 
 ```sh
-$ rippy <DIRECTORY> [PATTERN] [OPTIONS]
+$ sudo cp target/release/rippy /usr/local/bin
+```
+
+Confirm the installation:
+
+```sh
+$ rippy --version
+```
+
+### Windows
+
+After building, the executable will be located at `.\target\release\rippy.exe`.
+
+To make it globally accessible, add the release directory to your Windows `PATH`:
+
+```cmd
+> cd .\target\release\
+> echo %cd%
+```
+
+Then add the printed directory to your system `PATH` using **Environment Variables**.
+
+Verify installation in a new terminal:
+
+```cmd
+> rippy --version
+```
+
+---
+
+## Usage
+
+```sh
+$ rippy [DIRECTORY] [PATTERN] [OPTIONS]
 ```
 
 ### Arguments
-- `<DIRECTORY>`: The root directory to search, the sole required argument.
-- `[PATTERN]`: Optional pattern to search file contents for (supports regular expressions).
 
-### Optional Flags
-- `-A, --all`: Include hidden files and directories
-- `-B, --sort-by <KEY>`: Sorting options: 'date', 'name' [d], 'size' or 'type'
-- `-L, --max-depth <DEPTH>`: Maximum directory depth to search
-- `-Y, --date-format <FORMAT>`: Display date using the specified format (e.g., '%Y-%m-%d'), see [chrono docs](https://docs.rs/chrono/latest/chrono/format/strftime/index.html) for more details
-- `-I, --ignore <PAT1, ..., PATN>`: Ignore specific file extensions or directories
-- `-X, --include <PAT1, ..., PATN>`: Restrict search to specific filename patterns
-- `-R, --window-radius <RADIUS>`: Maximum character radius for result snippet window
-- `-M, --max-files <FILES>`: Maximum number of files to display for each directory
-- `-O, --output <FILENAME>`: Export the results as JSON to specified file
-- `-N, --indent <WIDTH>`: Character width to use for tree depth indentation
-- `-C, --case-insensitive`: Make pattern matching case insensitive
-- `-l, --follow-links`: Follow targets of symbolic links when found
-- `-P, --relative-path`: Display the relative paths from root with results
-- `-Z, --reverse`: Reverses sort order from ascending to descending
-- `-K, --full-path`: Display the full canonical paths with results
-- `-S, --size`: Display the size of files and directories with results
-- `-D, --date`: Display the system last modified datetime with results
-- `-E, --enumerate`: Display results enumerated by index within parent
-- `-T, --time`: Display the search duration time with results
-- `-g, --no-gitignore`: Do not use .gitignore files when found for filtering
-- `-G, --gray`: Display the results in grayscale without styling
-- `-Q, --quote`: Display the path results wrapped in double-quotes
-- `-F, --flat`: Display the results as flat list without indentation
-- `-U, --dir-detail`: Display size and date time details for directories
-- `-W, --windowless`: Display search results without context snippet window
-- `-J, --just-counts`: Display just entry counts without rendering a tree
-- `-h, --help`: Display help and usage information for rippy
-- `-v, --version`: Display the version of rippy
+* `[DIRECTORY]`: Root directory to search. Defaults to `.`.
+* `[PATTERN]`: Optional regex pattern to search file contents for.
+
+You can also provide the search pattern with:
+
+```sh
+$ rippy . --search "TODO"
+$ rippy . --find "TODO"
+$ rippy . -f "TODO"
+```
+
+---
+
+## Optional Flags
+
+### Search
+
+* `-f, --search, --find <PATTERN>`: Search file contents for a regex pattern
+* `--and <PATTERN>`: Require an additional pattern to match in the same file
+* `--or <PATTERN>`: Add an alternative pattern group
+* `-C, --case-insensitive`: Make pattern matching case-insensitive
+* `-W, --windowless`: Display search results without snippet windows
+* `-R, --window-radius <RADIUS>`: Maximum character radius for result snippets
+* `--all-matches`: Display every matching window for each file
+* `-m, --max-display-matches <COUNT>`: Maximum number of match windows to display per file
+* `--no-line-numbers`: Hide line numbers from search results
+
+### Traversal and Filtering
+
+* `-A, --all`: Include hidden files and directories
+* `-g, --no-gitignore`: Do not use `.gitignore` files when found
+* `-I, --ignore <PAT1, ..., PATN>`: Ignore specific file or directory patterns
+* `-X, --include <PAT1, ..., PATN>`: Restrict files to matching filename patterns; directories may also match for tree output
+* `-L, --max-depth <DEPTH>`: Maximum directory depth to search
+* `-l, --follow-links`: Follow symbolic links
+* `--dirs, --dirs-only, --directories-only`: Display only directories
+
+### Display
+
+* `-B, --sort-by <KEY>`: Sort by `date`, `name`, `size`, or `type`
+* `-Z, --reverse`: Reverse sort order
+* `-M, --max-files <FILES>`: Maximum number of files to display per directory
+* `-N, --indent <WIDTH>`: Character width for tree indentation
+* `-P, --relative-path`: Display relative paths from root
+* `-K, --full-path`: Display full canonical paths
+* `-S, --size`: Display file sizes
+* `-D, --date`: Display last modified timestamps
+* `-Y, --date-format <FORMAT>`: Format dates using a chrono/strftime format
+* `-U, --dir-detail`: Display size and date details for directories
+* `-E, --enumerate`: Enumerate entries within each parent
+* `-Q, --quote`: Wrap displayed paths in double quotes
+* `-F, --flat`: Display results as a flat list
+* `-G, --gray`: Display without color styling
+* `-T, --time`: Display elapsed runtime
+* `-J, --just-counts`: Display only summary counts
+
+### Output
+
+* `-O, --output <FILENAME>`: Export results as JSON
+
+### Help and Version
+
+* `-h, --help`: Display help and usage information
+* `-v, --version`: Display the version of `rippy`
+
+---
 
 ## Examples
-### Quick Overview
-Some example use-cases for `rippy` are provided below:
 
-1. **Display a tree of the current directory**:
-   ```sh
-   $ rippy .
-   ```
-2. **Search for a pattern in files and display as relative paths**:
-   ```sh
-   $ rippy . "TODO" -p 
-   ```
-3. **Search for a regex pattern in only `.txt` files and sort results by size**:
-   ```sh
-   $ rippy /path/to/docs "\b[A-z]{3}\b" -X "*.txt" -s --sort size
-   ```   
-5. **Limit search depth and sort by last modified date**:
-   ```sh
-   $ rippy /home/user -d -L 3 --sort date
-   ```
-5. **Include hidden files but ignore `.git` directory and export results to JSON**:
-   ```sh
-   $ rippy ./ --all -I ".git" -o "results.json"
-   ```
+### Display the current directory
+If no directory is provided, `rippy` will display the current directory's contents minus any ignored patterns found in files like `.gitignore`, for example in this project's root directory running:
 
-### Detailed Overview
-The most basic `rippy` operation is to simply output the contents of a provided directory as a tree in the terminal:
-
-```shell
-$ rippy "../rippy"
-
- ../rippy
-  ├── Cargo.lock 
-  ├── Cargo.toml
-  ├── README.MD
-  ╰── src
-      ├── args.rs
-      ├── dir.rs
-      ├── main.rs
-      ├── tcolor.rs
-      ╰── tree.rs
-
-1 directory, 8 files
+```sh
+$ rippy
 ```
 
-Leveraging rayon to execute fast multi-threaded file operations, `rippy` offers extensive functionality, including the ability to open and search the contents of files, traverse directories, and apply parameters to ignore or target specific patterns or extensions. Combining the beauty of the Unix `tree` command with the usefulness of `grep`, `rippy` can search file contents and display the context around matched snippets. For example, you can search only the `*.rs` files in the project source directory for mentions of the substring `'JSON'` and export the results:
+Results in the below output:
 
-```shell
-$ rippy ../rippy -sd "JSON" -X "*.rs" -o "json-mentioned.json"
+```text
+ .
+ ├── Cargo.lock
+ ├── Cargo.toml
+ ├── LICENSE
+ ├── README.MD
+ ├── build.rs
+ ╰── src
+     ├── args.rs
+     ├── bin
+     │   ╰── rippy.rs
+     ├── crawl.rs
+     ├── error.rs
+     ├── lib.rs
+     ├── tcolor.rs
+     ╰── tree.rs
 
- ../rippy
-  ╰── src 
-      ├── (2024-07-25 16:06:05,  12 K) args.rs ...Export the results as JSON to specified file...
-      ├── (2024-07-24 21:47:55, 4.6 K) main.rs ...// Output tree as JSON to file provided
-      ╰── (2024-07-25 17:44:28,  17 K) tree.rs ...the Tree structure to JSON and writes it to...
-
-3 matches, 5 searched
+2 directories, 12 files
 ```
 
-The flags `-sd` specify additional display options, `-s` or `--size` will display the file size, and `-d` or `--date` displays the timestamp the file was last modified. The `-X` or `--include` argument is used to only search files matching the provided pattern, in this case any file that ends with a `.rs` extension. The `-O` or `--output` argument specifies an output filename to export any results to. Finally, any second positional argument will be treated as the pattern to search the file contents for, in this the substring `JSON`. The output contents in `json-mentioned.json` will be formatted as valid `JSON` objects:
+### Limit traversal depth
+
+```sh
+$ rippy . -L 1
+```
+
+Shows only immediate children of the root directory.
+
+```text
+ .
+ ├── Cargo.lock
+ ├── Cargo.toml
+ ├── LICENSE
+ ├── README.MD
+ ├── build.rs
+ ╰── src
+
+1 directory, 5 files
+```
+
+### Search for a pattern
+
+```sh
+$ rippy . "usize"
+```
+
+Search results are displayed as `path:line` followed by a snippet.
+
+```text
+ .
+ ├── README.md:195 ┆ $ rippy . "usize"
+ ├── PROMPT.md:138 ┆ ...pub groups: Vec<Vec<usize>>,
+ ╰── src
+     ├── args.rs:59  ┆ ...pub groups: Vec<Vec<usize>>,
+     ├── crawl.rs:44 ┆ ...line_number: Option<usize>,
+     ╰── tree.rs:89  ┆ ...b fmt_width: Option<usize>,
+
+5 matches, 14 searched
+```
+
+### Search with explicit `--search`
+
+```sh
+$ rippy . --search "pub struct"
+```
+
+Equivalent to:
+
+```sh
+$ rippy . "pub struct"
+```
+
+### Search with logical operators
+
+```sh
+$ rippy . "needle0" --and "needle1" --or "needle2"
+```
+
+This behaves like:
+
+```text
+(needle0 AND needle1) OR needle2
+```
+
+### Show all matches in each file
+
+```sh
+$ rippy . "pub struct" --all-matches
+```
+
+Example output:
+
+```text
+ .
+ ╰── src
+     ├── args.rs:51   ┆ pub struct SearchTerm {
+     │   args.rs:57   ┆ pub struct SearchQuery {
+     │   args.rs:95   ┆ pub struct RippyArgs {
+     ├── crawl.rs:14  ┆ pub struct Ignorer {
+     │   crawl.rs:43  ┆ pub struct MatchWindow {
+     │   crawl.rs:58  ┆ pub struct TreeLeaf {
+     │   crawl.rs:105 ┆ pub struct CrawlResults {
+     ├── tcolor.rs:71 ┆ pub struct RippySchema {
+     ╰── tree.rs:61   ┆ pub struct TreeIter<'a> {
+         tree.rs:81   ┆ pub struct Tree {
+         tree.rs:321  ┆ pub struct TreeCounts {
+
+4 matches, 12 searched
+```
+
+### Limit displayed matches per file
+
+```sh
+$ rippy . "pub" --max-display-matches 3
+```
+
+### Search only Rust files
+
+```sh
+$ rippy . "JSON" -X "*.rs"
+```
+
+### Search with size and date details
+
+```sh
+$ rippy . "JSON" -S -D -X "*.rs"
+```
+
+```text
+ .
+ ╰── src
+     ├── (2026-04-27 22:41:13,  31 K) args.rs:433  ┆ ...port the results as JSON to specified file")...
+     ╰── (2026-04-27 17:58:42, 6.3 K) error.rs:128 ┆ ...r!("Failed to write JSON output [", &path_fm...
+
+2 matches, 8 searched
+```
+
+### Use a custom snippet radius
+
+```sh
+$ rippy . "registry" -R 40
+```
+
+### Hide snippets but keep line numbers
+
+```sh
+$ rippy . "pub struct" --windowless
+```
+
+```text
+ .
+ ╰── src
+     ├── args.rs:51
+     ├── crawl.rs:39
+     ╰── tree.rs:62
+
+3 matches, 13 searched
+```
+
+### Hide line numbers
+
+```sh
+$ rippy . "pub struct" --no-line-numbers
+```
+
+### Display only directories
+
+```sh
+$ rippy . --dirs
+```
+
+or:
+
+```sh
+$ rippy . --directories-only
+```
+
+### Search and return only directories containing matches
+
+```sh
+$ rippy . "TODO" --dirs
+```
+
+This searches files, but displays only directories containing matching files.
+
+### Include only matching names
+
+```sh
+$ rippy . -x "src"
+```
+
+This can match directories such as `src`.
+
+### Ignore directories or files
+
+```sh
+$ rippy . -I ".git,target"
+```
+
+### Include hidden files but ignore `.git`
+
+```sh
+$ rippy . --all -I ".git"
+```
+
+### Sort results
+
+```sh
+$ rippy . --sort size
+$ rippy . --sort date --reverse
+$ rippy . --sort type
+```
+
+Sort keys:
+
+* `date`: Sort by last modified date
+* `name`: Sort alphabetically by entry name
+* `size`: Sort by size in bytes
+* `type`: Sort by entry type
+
+### Export to JSON
+
+```sh
+$ rippy . --find "copyright" --all-matches --case-insensitive -O results.json
+```
+
+Example JSON shape:
 
 ```json
 {
-  "name": "../rippy",
+  "name": ".",
   "entry_type": "Directory",
-  "full_path": "../rippy",
-  "last_modified": "2024-07-25 17:55:35",
-  "size": 33737,
+  "last_modified": null,
+  "size": null,
   "window": null,
+  "windows": [],
   "children": [
     {
-      "name": "src",
-      "entry_type": "Directory",
-      "full_path": "../rippy/src",
-      "last_modified": "2024-07-24 17:11:53",
-      "size": 33737,
-      "window": null,
-      "children": [
-        {
-          "name": "args.rs",
-          "entry_type": "File",
-          "full_path": "../rippy/src/args.rs",
-          "last_modified": "2024-07-25 16:06:05",
-          "size": 12180,
-          "window": "...Export the results as JSON to specified file...",
-          "children": []
-        },
-        {
-          "name": "tree.rs",
-          "entry_type": "File",
-          "full_path": "../rippy/src/tree.rs",
-          "last_modified": "2024-07-25 17:44:28",
-          "size": 16973,
-          "window": "...the Tree structure to JSON and writes it to...",
-          "children": []
-        },
-        {
-          "name": "main.rs",
-          "entry_type": "File",
-          "full_path": "../rippy/src/main.rs",
-          "last_modified": "2024-07-24 21:47:55",
-          "size": 4584,
-          "window": "...// Output tree as JSON to file provided",
-          "children": []
-        }
-      ]
+      "name": "LICENSE",
+      "entry_type": "File",
+      "last_modified": "2024-11-11 21:51:35",
+      "size": 1095,
+      "window": "3 Copyright (c) 2024 Ante Tonkovic-Capin...",
+      "windows": [
+        "3 Copyright (c) 2024 Ante Tonkovic-Capin...",
+        "12 The above copyright notice and this per...",
+        "18 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE F..."
+      ],
+      "children": []
     }
   ]
 }
 ```
 
-Results can be displayed and sorted using various options and keys. Here we search the project directory for any mentions of the string "registry" including only those files startng with the characters "win", excluding the "build" directory and sort the results by file size in ascending order. A snippet of the matched contents will be included by default but can be omitted by passing the `-w` or `windowless` option. If the default snippet size is too narrow or too wide, a custom character radius can be set with `-r <WIDTH>` or `--window-radius <WIDTH>`:
+---
 
-```shell
-$ ./rippy "../rippy" -sd --sort "size" -I "build" -X "win*" -r 26 "registry"
+## Search Behavior Notes
 
- ../rippy
-  ╰── target
-      ╰── debug
-          ╰── deps
-              ├── (2024-07-29 18:12:54, 817 B) windows_x86_64_msvc-4d3fbecefb660e4c.d ...C:\Users\.cargo\registry\src\index.crates.io-6f17d...
-              ├── (2024-07-29 18:12:19, 1.8 K) winapi_util-6e8e4993ad95c0bf.d         ...C:\Users\.cargo\registry\src\index.crates.io-6f17d...
-              ├── (2024-07-29 18:12:59, 5.7 K) windows_sys-42f4f44881857ce7.d         ...C:\Users\.cargo\registry\src\index.crates.io-6f17d...
-              ╰── (2024-07-29 18:12:56,  15 K) winapi-a718b57d4cfcbb07.d              ...C:\Users\.cargo\registry\src\index.crates.io-6f17d...
+* Search patterns are regular expressions.
+* Invalid regular expressions return pretty error messages instead of panicking.
+* File content search runs in parallel.
+* By default, one match window is displayed per file.
+* Use `--all-matches` to show every match in each file.
+* Use `--max-display-matches <COUNT>` to cap match windows per file.
+* Search output uses `path:line` formatting when line numbers are enabled.
+* The snippet separator can be adjusted in `tree.rs` with `SEARCH_SNIPPET_SEPARATOR`.
 
-4 matches, 10 searched
-```
+---
 
-Results can be sorted 8 different ways using four different keys:
-- `date`: Sorts by last modified date from oldest to most recent.
-- `name`: Sorts alphabetically by entry name in case-sensitive fashion.
-- `size`: Sorts by content size in bytes from smallest to largest.
-- `type`: Sorts by entry type from directories first to files last.
+## Filtering Notes
 
-To reverse the sorting order for a given key, the `-z` or `--reverse` flag can be provided. When no sort key is specified, `name` will be used. When no ordering is specified, ascending order will be used by default.
+* Hidden files and directories are excluded by default.
+* Use `--all` to include hidden entries.
+* `.gitignore` files are respected by default.
+* Use `--no-gitignore` to disable `.gitignore` filtering.
+* `--ignore` and `--include` accept comma-delimited patterns.
+* Patterns containing `*` are treated as wildcard-style patterns and converted to regex sets.
+* Directories are preserved during traversal so `--max-depth` and include filters behave correctly.
+
+---
 
 ## License
-This project is [MIT licensed](https://github.com/AnteT/rippy/blob/master/LICENSE) with the source code for `rippy`, currently a work in progress, [openly available](https://github.com/AnteT/rippy).
+
+This project is [MIT licensed](https://github.com/AnteT/rippy/blob/master/LICENSE), with the source code for `rippy` openly available at [github.com/AnteT/rippy](https://github.com/AnteT/rippy).
 
 Thank you!
 
-_- Ante Tonkovic-Capin_
+*- Ante Tonkovic-Capin*
